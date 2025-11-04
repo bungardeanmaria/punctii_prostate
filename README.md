@@ -1,2 +1,2 @@
 # punctii_prostate
-punctii 
+Calculator-ul Mariei pentru punctiile la prostate 
