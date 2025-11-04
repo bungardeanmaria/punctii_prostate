@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8" />
+<title>Fragmente prostată – generator text</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { --bd:#e5e7eb; --muted:#64748b; --bg:#ffffff; }
+  html, body { height:100%; }
+  body { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; margin:0; background:#f8fafc; color:#0f172a; }
+  header { position:sticky; top:0; background:#ffffffcc; backdrop-filter:saturate(1.1) blur(6px);
+           border-bottom:1px solid var(--bd); padding:10px 16px; z-index:10; }
+  header h1 { margin:0; font-size:18px; }
+  main { padding:16px; display:grid; gap:16px; max-width:1200px; margin:0 auto; }
+
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+
+  .card { border:1px solid var(--bd); border-radius:14px; padding:14px; background:var(--bg); }
+  h2 { margin:0 0 8px; font-size:18px; }
+  .muted { color:var(--muted); font-size:12px; }
+  .inline { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .badge { background:#e2e8f0; border-radius:999px; padding:2px 8px; font-size:12px; }
+  .right { text-align:right; }
+  button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; background:#0ea5e9; color:white; }
+  button.secondary { background:#64748b; }
+  .switch { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid var(--bd); border-radius:999px; }
+
+  /* Table base */
+  .table-wrap { overflow:auto; }
+  table { width:100%; border-collapse:collapse; background:#fff; }
+  th, td { border:1px solid var(--bd); padding:8px; text-align:left; }
+  th { background:#f1f5f9; position:sticky; top:0; }
+
+  input[type="number"], input[type="text"] { width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:8px; }
+
+  textarea { width:100%; min-height:260px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+             border:1px solid var(--bd); border-radius:10px; padding:10px; background:#fff; }
+
+  /* Mobile stacked rows: turn table rows into cards with labels */
+  @media (max-width: 720px) {
+    table thead { display: none; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    tr { border:1px solid var(--bd); border-radius:12px; padding:10px; margin-bottom:12px; background:#fff; }
+    td { border:none; border-bottom:1px dashed #e5e7eb; }
+    td:last-child { border-bottom:none; }
+    td[data-label]::before {
+      content: attr(data-label);
+      display:block;
+      font-size:12px;
+      color:#475569;
+      margin-bottom:4px;
+    }
+    .tfoot-row { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; }
+    .hide-on-mobile { display:none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Template – Fragmente prostatice</h1>
+</header>
+<main>
+
+  <div class="row">
+    <div class="card">
+      <h2>1) Configurare & Fragmente</h2>
+
+      <div class="inline" style="gap:12px; margin-bottom:8px;">
+        <label for="fragCount"><b>Număr fragmente</b></label>
+        <input id="fragCount" type="number" min="1" max="16" value="16" style="width:110px" />
+        <button id="applyCount" class="secondary" type="button">Aplică</button>
+        <button id="addOne" class="secondary" type="button">+1</button>
+        <button id="removeOne" class="secondary" type="button">-1</button>
+        <span id="totalBadge" class="badge">Total: 16</span>
+        <button id="clearAll" class="secondary" type="button">Golește toate câmpurile</button>
+      </div>
+
+      <div class="inline" style="gap:12px; margin-bottom:8px;">
+        <label class="switch"><input type="checkbox" id="incRight" checked> Include lob drept</label>
+        <label class="switch"><input type="checkbox" id="incLeft" checked> Include lob stang</label>
+        <label class="switch"><input type="checkbox" id="incNerves" checked> Include N1–N4</label>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th class="hide-on-mobile">✔</th>
+              <th class="hide-on-mobile">#</th>
+              <th>Nume fragment</th>
+              <th title="Lungimea fragmentului (mm)">X (mm)</th>
+              <th title="Lungimea infiltrată (mm)">Y (mm)</th>
+              <th>Z (%)</th>
+              <th title="Pattern dominant Gleason">A</th>
+              <th title="Procent dominant">% B</th>
+              <th title="Pattern secundar Gleason">C</th>
+              <th title="Procent secundar">% D</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot>
+            <tr class="tfoot-row">
+              <th colspan="3" class="right">Totaluri (pe cele bifate & grupuri selectate):</th>
+              <th id="sumX">0</th>
+              <th id="sumY">0</th>
+              <th id="sumZ">0</th>
+              <th class="right">—</th>
+              <th id="sumB">0</th>
+              <th class="right">—</th>
+              <th id="sumD">0</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <p class="muted" style="margin-top:8px;">
+        E = ΣY &nbsp; | &nbsp; F = ΣZ &nbsp; | &nbsp; G = ΣX &nbsp; | &nbsp; H = ΣB &nbsp; | &nbsp; I = ΣD
+        (numai pe elementele bifate și din grupurile selectate)
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>2) Text rezultat</h2>
+      <p class="muted">Se regenerează automat. Variabila JS este <code>window.finalText</code>.</p>
+      <textarea id="out"></textarea>
+      <div class="inline" style="margin-top:8px;">
+        <button id="copy" type="button" class="secondary">Copiază</button>
+        <button id="download" type="button" class="secondary">Descarcă .txt</button>
+        <span id="charCount" class="badge">0 chars</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+/* ------------------ Config / Labels ------------------ */
+const FRAGMENTS_ALL = [
+  // lob drept (0..5)
+  "lob drept: lateral baza",
+  "lob drept: lateral mijloc",
+  "lob drept: lateral varf",
+  "lob drept: medial baza",
+  "lob drept: medial mijloc",
+  "lob drept: medial varf",
+  // lob stang (6..11)
+  "lob stang: lateral baza",
+  "lob stang: lateral mijloc",
+  "lob stang: lateral varf",
+  "lob stang: medial baza",
+  "lob stang: medial mijloc",
+  "lob stang: medial varf",
+  // N1–N4 (12..15)
+  "N1","N2","N3","N4",
+];
+
+const RIGHT_LOCATIONS = ["lateral baza","lateral mijloc","lateral varf","medial baza","medial mijloc","medial varf"];
+const LEFT_LOCATIONS  = ["lateral baza","lateral mijloc","lateral varf","medial baza","medial mijloc","medial varf"];
+const MAX_FRAG = 16;
+
+/* ------------------ State ------------------ */
+let rows = [];      // {name, include, X,Y,Z,A,B,C,D}
+let fragCount = 16; // current number
+let includeRight = true;
+let includeLeft  = true;
+let includeNerves = true;
+
+window.finalText = ""; // final report text
+
+/* ------------------ DOM ------------------ */
+const $ = (id) => document.getElementById(id);
+const tbody = $("tbody");
+const sumX = $("sumX"), sumY = $("sumY"), sumZ = $("sumZ"), sumB = $("sumB"), sumD = $("sumD");
+const out = $("out"), charCount = $("charCount"), totalBadge = $("totalBadge");
+
+/* ------------------ Helpers ------------------ */
+function newRow(name) { return { name, include: true, X:"", Y:"", Z:0, A:"", B:"", C:"", D:"" }; }
+
+function ensureRowCount(n) {
+  if (n < 1) n = 1;
+  if (n > MAX_FRAG) n = MAX_FRAG;
+  const current = rows.length;
+  if (n > current) {
+    for (let i=current; i<n; i++) rows.push(newRow(FRAGMENTS_ALL[i]));
+  } else if (n < current) {
+    rows.length = n;
+  }
+  for (let i=0; i<n; i++) rows[i].name = FRAGMENTS_ALL[i];
+  fragCount = n;
+  $("fragCount").value = String(n);
+  totalBadge.textContent = `Total: ${n}`;
+}
+
+// Group enable checks
+function groupEnabled(i) {
+  if (i < 6) return includeRight;
+  if (i < 12) return includeLeft;
+  return includeNerves;
+}
+function includedIndices() {
+  return rows
+    .map((r, i) => ({ i, ok: r.include && groupEnabled(i) }))
+    .filter(x => x.ok)
+    .map(x => x.i);
+}
+
+/* ------------------ Table rendering (mobile-friendly) ------------------ */
+function td(label, content, dataLabel=true) {
+  const td = document.createElement("td");
+  if (dataLabel) td.dataset.label = label;
+  if (content instanceof Node) td.appendChild(content);
+  else td.textContent = content;
+  return td;
+}
+
+function buildTable() {
+  tbody.innerHTML = "";
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+
+    // include checkbox
+    const cb = document.createElement("input"); cb.type="checkbox"; cb.checked=r.include;
+    cb.addEventListener("change", () => { r.include = cb.checked; recompute(); });
+    tr.appendChild(td("✔", cb));
+
+    // index
+    tr.appendChild(td("#", i+1));
+
+    // name
+    tr.appendChild(td("Nume fragment", r.name));
+
+    // X
+    const inX = document.createElement("input"); inX.type="number"; inX.step="any"; inX.value=r.X;
+    inX.addEventListener("input", ()=>{ r.X = inX.value; recompute(); });
+    tr.appendChild(td("X (mm)", inX));
+
+    // Y
+    const inY = document.createElement("input"); inY.type="number"; inY.step="any"; inY.value=r.Y;
+    inY.addEventListener("input", ()=>{ r.Y = inY.value; recompute(); });
+    tr.appendChild(td("Y (mm)", inY));
+
+    // Z (computed)
+    const zCell = td("Z (%)", r.Z || 0); zCell.className = "zcell";
+    tr.appendChild(zCell);
+
+    // A
+    const inA = document.createElement("input"); inA.type="text"; inA.value=r.A;
+    inA.addEventListener("input", ()=>{ r.A = inA.value; recompute(false); });
+    tr.appendChild(td("A", inA));
+
+    // B
+    const inB = document.createElement("input"); inB.type="number"; inB.step="any"; inB.value=r.B;
+    inB.addEventListener("input", ()=>{ r.B = inB.value; recompute(false); });
+    tr.appendChild(td("B (%)", inB));
+
+    // C
+    const inC = document.createElement("input"); inC.type="text"; inC.value=r.C;
+    inC.addEventListener("input", ()=>{ r.C = inC.value; recompute(false); });
+    tr.appendChild(td("C", inC));
+
+    // D
+    const inD = document.createElement("input"); inD.type="number"; inD.step="any"; inD.value=r.D;
+    inD.addEventListener("input", ()=>{ r.D = inD.value; recompute(false); });
+    tr.appendChild(td("D (%)", inD));
+
+    tbody.appendChild(tr);
+  });
+}
+
+/* ------------------ Computations ------------------ */
+function recompute(updateZCells = true) {
+  rows.forEach(r => {
+    const X = Number(r.X), Y = Number(r.Y);
+    r.Z = (isFinite(X) && X>0 && isFinite(Y) && Y>=0) ? Math.round((Y/X)*100) : 0;
+  });
+
+  const idxs = includedIndices();
+  const E = idxs.reduce((s,i)=> s + (Number(rows[i].Y)||0), 0);
+  const F = idxs.reduce((s,i)=> s + (Number(rows[i].Z)||0), 0);
+  const G = idxs.reduce((s,i)=> s + (Number(rows[i].X)||0), 0);
+  const H = idxs.reduce((s,i)=> s + (Number(rows[i].B)||0), 0);
+  const I = idxs.reduce((s,i)=> s + (Number(rows[i].D)||0), 0);
+
+  sumX.textContent = G.toString();
+  sumY.textContent = E.toString();
+  sumZ.textContent = F.toString();
+  sumB.textContent = H.toString();
+  sumD.textContent = I.toString();
+
+  if (updateZCells) {
+    [...tbody.querySelectorAll("tr")].forEach((tr, idx) => {
+      const zCell = tr.querySelector(".zcell");
+      if (zCell) zCell.textContent = rows[idx].Z || 0;
+    });
+  }
+
+  window.finalText = buildReportText(E,F,G,H,I);
+  out.value = window.finalText;
+  charCount.textContent = `${window.finalText.length} chars`;
+}
+
+/* ------------------ Text building ------------------ */
+function rowIncluded(i) { return rows[i] && rows[i].include && groupEnabled(i); }
+
+function fragmentLineForX(prefix, startIdx, locations, includeGroup) {
+  if (!includeGroup) return null;
+  const parts = locations
+    .map((loc, k) => {
+      const idx = startIdx + k;
+      if (idx >= rows.length || !rowIncluded(idx)) return null;
+      const r = rows[idx], x = r?.X || "x";
+      return `${loc} - cu lungimea de ${x} mm`;
+    })
+    .filter(Boolean);
+  if (!parts.length) return null;
+  return `- ${prefix}: ${parts.join(", ")};`;
+}
+function fragmentInfiltrationLines(prefix, startIdx, locations, includeGroup) {
+  if (!includeGroup) return null;
+  const lines = locations
+    .map((loc, k) => {
+      const idx = startIdx + k;
+      if (idx >= rows.length || !rowIncluded(idx)) return null;
+      const r = rows[idx];
+      const y = r?.Y || "y";
+      const z = (r?.Z ?? "z");
+      const a = r?.A || "a";
+      const b = r?.B || "b";
+      const c = r?.C || "c";
+      const d = r?.D || "d";
+      return `${loc}: pe o lungime de ${y} mm (${z}%), cu pattern dominant Gleason ${a} (${b}%) si pattern secundar Gleason ${c} (${d}%),`;
+    })
+    .filter(Boolean);
+  if (!lines.length) return null;
+  return `-  ${prefix}:\n` + lines.join("\n");
+}
+function nervesXLine(includeGroup) {
+  if (!includeGroup) return null;
+  const parts = [];
+  for (let i=12; i<16 && i<rows.length; i++) {
+    if (!rowIncluded(i)) continue;
+    const label = `N${i-11}`;
+    const x = rows[i].X || "x";
+    parts.push(`${label}: ${x} mm`);
+  }
+  if (!parts.length) return null;
+  return parts.join(", ") + ".";
+}
+function nervesInfiltrationLines(includeGroup) {
+  if (!includeGroup) return null;
+  const lines = [];
+  for (let i=12; i<16 && i<rows.length; i++) {
+    if (!rowIncluded(i)) continue;
+    const label = `N${i-11}`;
+    const r = rows[i];
+    const y = r.Y || "y", z = (r.Z ?? "z");
+    const a = r.A || "a", b = r.B || "b", c = r.C || "c", d = r.D || "d";
+    lines.push(`${label}: pe o lungime de ${y} mm (${z}%), cu pattern dominant Gleason ${a} (${b}%) si pattern secundar Gleason ${c} (${d}%).`);
+  }
+  return lines.join("\n");
+}
+
+function buildReportText(E,F,G,H,I) {
+  const N = includedIndices().length; // only included rows in enabled groups
+
+  const rightX = fragmentLineForX("lob drept", 0, RIGHT_LOCATIONS, includeRight);
+  const leftX  = fragmentLineForX("lob stang", 6, LEFT_LOCATIONS, includeLeft);
+  const nervesX = nervesXLine(includeNerves);
+
+  const parts1 = [
+    `Materialul examinat este alcatuit din ${N} fragmente prostatice biopunctate astfel:`,
+    rightX, leftX, nervesX ? `\n      ${nervesX}` : null
+  ].filter(Boolean).join("\n");
+
+  const rightInf = fragmentInfiltrationLines("lob drept", 0, RIGHT_LOCATIONS, includeRight);
+  const leftInf  = fragmentInfiltrationLines("lob stang", 6, LEFT_LOCATIONS, includeLeft);
+  const nervesInf = nervesInfiltrationLines(includeNerves);
+
+  const parts2 = [
+    `Sunt infiltrate de un adenocarcinom prostatic acinar astfel:`,
+    rightInf, "", leftInf, "", nervesInf
+  ].filter(s => s !== null).join("\n");
+
+  const summary =
+`Sunt infiltrati in total ${E} mm (${F}%), din cei ${G} mm ai fragmentelor prelevate,  fragmente pozitive din totalul de .       
+
+Nu se identifica aspecte de extensie extraprostatica, infiltrare perineurala sau invazie angiolimfatica (in aceste sectiuni).
+
+Prezinta hiperplazie glandulara multifocala, glande atrofice si un moderat infiltrat inflamator limfocitar in stroma cu abcese glandulare focale.
+
+Total procent pattern dominant: ${H}
+Total procent pattern secundar: ${I}
+
+Diagnostic: 
+Adenocarcinom prostatic acinar scor Gleason  (+), grupa de gradare  (ISUP/OMS 2022).
+
+C 61.9   M-8140/3`;
+
+  return `${parts1}\n\n${parts2}\n\n${summary}`.replace(/\t/g,"");
+}
+
+/* ------------------ Events & Init ------------------ */
+function resetAllValues() {
+  rows.forEach(r => { r.X=""; r.Y=""; r.Z=0; r.A=""; r.B=""; r.C=""; r.D=""; r.include=true; });
+  buildTable(); recompute();
+}
+
+$("applyCount").addEventListener("click", () => {
+  const val = Number($("fragCount").value);
+  ensureRowCount(isFinite(val) ? val : fragCount);
+  buildTable(); recompute();
+});
+$("addOne").addEventListener("click", () => { ensureRowCount(fragCount + 1); buildTable(); recompute(); });
+$("removeOne").addEventListener("click", () => { ensureRowCount(fragCount - 1); buildTable(); recompute(); });
+$("clearAll").addEventListener("click", resetAllValues);
+
+$("incRight").addEventListener("change", e => { includeRight = e.target.checked; recompute(); });
+$("incLeft").addEventListener("change", e => { includeLeft  = e.target.checked; recompute(); });
+$("incNerves").addEventListener("change", e => { includeNerves = e.target.checked; recompute(); });
+
+$("copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(out.value); } catch {}
+});
+$("download").addEventListener("click", () => {
+  const blob = new Blob([out.value], {type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "raport.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// Boot
+(function init(){
+  for (let i=0;i<16;i++) rows.push(newRow(FRAGMENTS_ALL[i]));
+  buildTable(); recompute();
+})();
+</script>
+</body>
+</html>
