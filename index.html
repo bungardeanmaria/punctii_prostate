@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Report Builder (text only)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+:root { --bd:#e5e7eb; --muted:#64748b; }
+body { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; margin:24px; }
+.grid { display:grid; gap:16px; }
+.row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+.card { border:1px solid var(--bd); border-radius:12px; padding:16px; background:#fff; }
+label { font-weight:600; }
+.inline { display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.badge { background:#e2e8f0; border-radius:999px; padding:2px 8px; font-size:12px; }
+.muted { color:var(--muted); font-size:12px; }
+input[type="text"], input[type="number"] { width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; }
+input[type="checkbox"] { transform:scale(1.2); }
+textarea { width:100%; min-height:140px; padding:8px; border:1px solid #cbd5e1; border-radius:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; background:#0ea5e9; color:white; }
+button.secondary { background:#64748b; }
+table { border-collapse:collapse; width:100%; }
+th, td { border:1px solid #d1d5db; padding:8px; text-align:left; }
+.pill { background:#f1f5f9; padding:4px 8px; border-radius:999px; font-size:12px; }
+.kv { display:grid; grid-template-columns: 220px 1fr; gap:8px; align-items:center; }
+.sections { list-style:none; padding:0; margin:0; display:grid; gap:12px; }
+.section { border:1px solid var(--bd); border-radius:12px; padding:12px; background:#fff; }
+.section-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.section-handle { cursor:grab; user-select:none; font-weight:700; padding:2px 8px; border-radius:6px; background:#f1f5f9; }
+.section-name { width:200px; }
+.section-controls button { margin-left:6px; }
+.section textarea { min-height:100px; }
+pre.small { white-space:pre-wrap; font-size:12px; color:#475569; }
+</style>
+</head>
+<body>
+<h1>Report Builder (text only)</h1>
+<p class="muted">This version avoids DOCX completely. It builds the final text in memory (shown below). You can copy/export it. Later we’ll generate DOCX from that variable.</p>
+
+<div class="row">
+  <div class="card grid">
+    <h2>1) Load / Save JSON</h2>
+    <div class="inline">
+      <button id="useSample" class="secondary" type="button">Load sample JSON</button>
+      <button id="exportJson" class="secondary" type="button">Export JSON</button>
+    </div>
+    <textarea id="jsonPaste" spellcheck="false" placeholder="Paste JSON here..."></textarea>
+    <div class="inline">
+      <button id="applyJson" type="button">Apply JSON to form</button>
+      <span class="muted">Applies the JSON above into the form/tree editor.</span>
+    </div>
+    <pre class="small">Tip: You can edit using the form or raw JSON. Everything stays in sync.</pre>
+  </div>
+
+  <div class="card grid">
+    <h2>2) Final text</h2>
+    <p class="muted">This is the merged output we’ll use to make the DOCX later.</p>
+    <textarea id="finalText" readonly></textarea>
+    <div class="inline">
+      <button id="copyText" class="secondary" type="button">Copy to clipboard</button>
+      <button id="downloadTxt" class="secondary" type="button">Download .txt</button>
+      <span id="lenBadge" class="badge">0 chars</span>
+    </div>
+  </div>
+</div>
+
+<div class="card grid">
+  <div class="inline" style="justify-content:space-between; width:100%;">
+    <h2 style="margin:0;">3) Edit data (form editor)</h2>
+    <div class="inline">
+      <label for="toggleRaw" class="pill">Show Raw JSON</label>
+      <input id="toggleRaw" type="checkbox" />
+    </div>
+  </div>
+
+  <!-- FORM EDITOR -->
+  <div id="simpleEditor" class="grid">
+    <h3>Fields</h3>
+    <div id="kvContainer" class="grid"></div>
+    <div id="tablesContainer" class="grid"></div>
+  </div>
+
+  <!-- RAW JSON -->
+  <div id="rawEditor" style="display:none;">
+    <textarea id="rawJson" spellcheck="false"></textarea>
+    <div class="inline" style="gap:8px; margin-top:8px;">
+      <button id="applyRaw" class="secondary" type="button">Apply raw JSON to form</button>
+    </div>
+  </div>
+</div>
+
+<div class="card grid">
+  <h2>4) Body Sections (order & merge)</h2>
+  <p class="muted">We read <code>body</code> from JSON. Use {placeholders} like <code>{title}</code>, <code>{patientName}</code>, <code>{items[0].name}</code>. Reorder with ↑/↓ or drag ↕. Toggle include with the checkbox.</p>
+
+  <div class="inline" style="gap:8px;">
+    <button id="addSection" class="secondary" type="button">+ Add section</button>
+  </div>
+
+  <ul id="sections" class="sections"></ul>
+
+  <h3>Preview merged body</h3>
+  <textarea id="bodyPreview" readonly></textarea>
+</div>
+
+<!-- A sample JSON embedded so the page works offline immediately -->
+<script type="application/json" id="sampleJSON">
+{
+  "title": "Sample Report A",
+  "patientName": "Alexandru Filip",
+  "date": "2025-11-04",
+  "notes": "Loaded from inline sample JSON.",
+  "doctorName": "Dr. George Muntean",
+  "items": [
+    { "name": "prostata a", "value": [
+      { "name": "test b1", "value": 3 },
+      { "name": "test b2", "value": 2 }
+    ] },
+    { "name": "prostata b", "value": [
+      { "name": "test b1", "value": 3 },
+      { "name": "test b2", "value": 2 }
+    ] }
+  ],
+  "body": {
+    "intro": "{title}\\nMaterialul examinat este alcatuit din {numar_total_fragmente}",
+    "middle": "",
+    "end": ""
+  },
+  "diagnostic": "Diagnostic: ..."
+}
+</script>
+
+<script>
+/* ---------------- State ---------------- */
+let dataModel = {};       // current JSON object (editable)
+let sectionsUI = [];      // [{key, include}]
+window.finalText = "";    // <- your requested variable with the merged content
+
+/* ---------------- Utils ---------------- */
+const $ = (id) => document.getElementById(id);
+const isPrimitive = (v) => ["string","number","boolean"].includes(typeof v);
+const isPlainObject = (v) => v && typeof v === "object" && !Array.isArray(v);
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+function getByPath(root, pathStr) {
+  const parts = pathStr.split('.').flatMap(p => {
+    const m = [...p.matchAll(/([^\[\]]+)|\[(\d+)\]/g)];
+    return m.map(g => g[1] ?? Number(g[2]));
+  });
+  let cur = root;
+  for (const key of parts) {
+    if (cur == null) return "";
+    cur = cur[key];
+  }
+  return (cur === undefined || cur === null) ? "" : cur;
+}
+
+function renderTpl(s, root) {
+  return s.replace(/\{([^}]+)\}/g, (_, expr) => {
+    try { return String(getByPath(root, expr.trim())); }
+    catch { return ""; }
+  });
+}
+
+/* ---------------- Form Editor (recursive) ---------------- */
+const kvContainer = $("kvContainer");
+const tablesContainer = $("tablesContainer");
+
+function addFieldControls(parentObj, containerEl) {
+  const wrap = document.createElement("div");
+  wrap.className = "inline";
+  wrap.style.gap = "8px";
+
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.placeholder = "new field name";
+  nameInput.style.minWidth = "160px";
+
+  const typeSelect = document.createElement("select");
+  ["string","number","boolean","object","array-objects","array-primitives"].forEach(t=>{
+    const o=document.createElement("option");
+    o.value=t; o.textContent=t; typeSelect.appendChild(o);
+  });
+
+  const addBtn = document.createElement("button");
+  addBtn.type = "button"; addBtn.className = "secondary"; addBtn.textContent = "Add field";
+
+  addBtn.addEventListener("click", () => {
+    const k = (nameInput.value || "").trim();
+    if (!k) { alert("Field name required"); return; }
+    if (k in parentObj) { alert(`Field "${k}" already exists`); return; }
+
+    const t = typeSelect.value;
+    switch (t) {
+      case "string": parentObj[k] = ""; break;
+      case "number": parentObj[k] = 0; break;
+      case "boolean": parentObj[k] = false; break;
+      case "object": parentObj[k] = {}; break;
+      case "array-objects": parentObj[k] = [ {} ]; break;
+      case "array-primitives": parentObj[k] = [ "" ]; break;
+      default: parentObj[k] = "";
+    }
+    renderSimpleEditor(dataModel);
+    refreshRawEditor();
+    refreshPreview();
+  });
+
+  wrap.append(nameInput, typeSelect, addBtn);
+  containerEl.appendChild(wrap);
+}
+
+function renderNode(key, value, parent, path, container) {
+  if (isPrimitive(value)) {
+    const row = document.createElement("div"); row.className = "kv";
+    const label = document.createElement("label"); label.textContent = key;
+    const input = document.createElement("input");
+
+    if (typeof value === "number") {
+      input.type = "number"; input.step = "any"; input.value = String(value);
+      input.addEventListener("input", () => { parent[key] = Number(input.value || 0); syncAll(); });
+    } else if (typeof value === "boolean") {
+      input.type="checkbox"; input.checked=value;
+      input.addEventListener("change", () => { parent[key] = input.checked; syncAll(); });
+    } else {
+      input.type="text"; input.value=value ?? "";
+      input.addEventListener("input", () => { parent[key] = input.value; syncAll(); });
+    }
+    row.append(label, input); container.appendChild(row); return;
+  }
+
+  if (Array.isArray(value)) {
+    const header = document.createElement("h3");
+    header.textContent = `${key} (array${value.length && typeof value[0] === "object" ? " of objects" : ""})`;
+    container.appendChild(header);
+
+    if (!value.length || isPrimitive(value[0])) {
+      const list = document.createElement("div"); list.className = "grid";
+      value.forEach((item, idx) => {
+        const row = document.createElement("div"); row.className = "kv";
+        const label = document.createElement("label"); label.textContent = `${key}[${idx}]`;
+        const input = document.createElement("input");
+        if (typeof item === "number") {
+          input.type="number"; input.step="any"; input.value=String(item);
+          input.addEventListener("input", () => { parent[key][idx] = Number(input.value || 0); syncAll(); });
+        } else {
+          input.type="text"; input.value=String(item ?? "");
+          input.addEventListener("input", () => { parent[key][idx] = input.value; syncAll(); });
+        }
+        const del = document.createElement("button"); del.type="button"; del.className="secondary"; del.textContent="Remove";
+        del.addEventListener("click", () => { parent[key].splice(idx,1); renderSimpleEditor(dataModel); syncAll(); });
+        row.append(label,input,del); list.appendChild(row);
+      });
+      const add = document.createElement("button"); add.type="button"; add.textContent=`+ Add ${key} item`;
+      add.addEventListener("click", () => { parent[key].push(""); renderSimpleEditor(dataModel); syncAll(); });
+      container.append(list,add); return;
+    }
+
+    const wrapper = document.createElement("div"); wrapper.className = "grid";
+    const keysUnion = Array.from(new Set(value.flatMap(o => Object.keys(o || {}))));
+    if (keysUnion.length === 0) keysUnion.push("name","value");
+
+    value.forEach((rowObj, idx) => {
+      const card = document.createElement("div"); card.className = "card";
+      const title = document.createElement("div"); title.className="inline";
+      const badge = document.createElement("span"); badge.className="badge"; badge.textContent=`${key}[${idx}]`;
+      const remove = document.createElement("button"); remove.type="button"; remove.className="secondary"; remove.textContent="Remove";
+      remove.addEventListener("click", () => { parent[key].splice(idx,1); renderSimpleEditor(dataModel); syncAll(); });
+      title.append(badge, remove); card.appendChild(title);
+
+      keysUnion.forEach((col) => {
+        if (!(col in rowObj)) return;
+        const sub = document.createElement("div");
+        renderNode(col, rowObj[col], rowObj, [...path, key, String(idx), col], sub);
+        card.appendChild(sub);
+      });
+
+      Object.keys(rowObj).forEach((col) => {
+        if (keysUnion.includes(col)) return;
+        const sub = document.createElement("div");
+        renderNode(col, rowObj[col], rowObj, [...path, key, String(idx), col], sub);
+        card.appendChild(sub);
+      });
+
+      addFieldControls(rowObj, card);
+      wrapper.appendChild(card);
+    });
+
+    const addRow = document.createElement("button"); addRow.type="button"; addRow.textContent=`+ Add ${key} row`;
+    addRow.addEventListener("click", () => {
+      const newRow = {}; keysUnion.forEach(col => newRow[col] = "");
+      parent[key].push(newRow);
+      renderSimpleEditor(dataModel); syncAll();
+    });
+
+    container.append(wrapper, addRow); return;
+  }
+
+  if (isPlainObject(value)) {
+    const section = document.createElement("div");
+    const header = document.createElement("h3"); header.textContent = `${key} (object)`;
+    section.appendChild(header);
+
+    Object.keys(value).forEach((k2) => {
+      const sub = document.createElement("div");
+      renderNode(k2, value[k2], value, [...path, key, k2], sub);
+      section.appendChild(sub);
+    });
+
+    addFieldControls(value, section);
+    container.appendChild(section);
+  }
+}
+
+function renderSimpleEditor(obj) {
+  kvContainer.innerHTML = "";
+  tablesContainer.innerHTML = "";
+  Object.keys(obj).forEach((k) => {
+    const v = obj[k];
+    (isPrimitive(v) || isPlainObject(v))
+      ? renderNode(k, v, obj, [k], kvContainer)
+      : renderNode(k, v, obj, [k], tablesContainer);
+  });
+}
+
+/* ---------------- Body Sections ---------------- */
+const sectionsList = $("sections");
+const bodyPreview = $("bodyPreview");
+
+function initSections() {
+  const body = isPlainObject(dataModel.body) ? dataModel.body : (dataModel.body = {});
+  sectionsUI = Object.keys(body).map(k => ({ key: k, include: true }));
+}
+
+function renderSections() {
+  const body = dataModel.body || {};
+  sectionsList.innerHTML = "";
+  sectionsUI.forEach((row, idx) => {
+    const li = document.createElement("li"); li.className="section"; li.draggable=true;
+
+    const head = document.createElement("div"); head.className="section-header";
+    const handle = document.createElement("span"); handle.className="section-handle"; handle.textContent="↕";
+    const include = document.createElement("input"); include.type="checkbox"; include.checked=row.include;
+    include.addEventListener("change",()=>{ row.include = include.checked; refreshPreview(); });
+
+    const nameInput = document.createElement("input"); nameInput.className="section-name";
+    nameInput.type="text"; nameInput.value=row.key;
+    nameInput.addEventListener("change", () => {
+      const old=row.key, neu=nameInput.value.trim(); if(!neu){ nameInput.value=old; return; }
+      if (old!==neu){ body[neu]=body[old]; delete body[old]; row.key=neu; syncAll(); }
+    });
+
+    const ctrls = document.createElement("div"); ctrls.className="section-controls";
+    const up=document.createElement("button"); up.className="secondary"; up.textContent="↑";
+    const down=document.createElement("button"); down.className="secondary"; down.textContent="↓";
+    const del=document.createElement("button"); del.className="secondary"; del.textContent="Remove";
+    up.addEventListener("click",()=>{ if(idx>0){ const t=sectionsUI[idx-1]; sectionsUI[idx-1]=sectionsUI[idx]; sectionsUI[idx]=t; renderSections(); refreshPreview(); }});
+    down.addEventListener("click",()=>{ if(idx<sectionsUI.length-1){ const t=sectionsUI[idx+1]; sectionsUI[idx+1]=sectionsUI[idx]; sectionsUI[idx]=t; renderSections(); refreshPreview(); }});
+    del.addEventListener("click",()=>{ delete body[row.key]; sectionsUI.splice(idx,1); renderSections(); syncAll(); });
+    ctrls.append(up,down,del);
+
+    head.append(handle, include, nameInput, ctrls);
+    li.appendChild(head);
+
+    const ta = document.createElement("textarea");
+    ta.value = String(body[row.key] ?? "");
+    ta.addEventListener("input",()=>{ body[row.key]=ta.value; syncAll(); });
+    li.appendChild(ta);
+
+    li.addEventListener("dragstart",(e)=>{ e.dataTransfer.setData("text/plain", idx.toString()); });
+    li.addEventListener("dragover",(e)=>{ e.preventDefault(); });
+    li.addEventListener("drop",(e)=>{ e.preventDefault(); const from=Number(e.dataTransfer.getData("text/plain")); if(from===idx) return;
+      const moved=sectionsUI.splice(from,1)[0]; sectionsUI.splice(idx,0,moved); renderSections(); refreshPreview(); });
+
+    sectionsList.appendChild(li);
+  });
+}
+
+function buildMergedBody() {
+  const body = dataModel.body || {};
+  const lines = [];
+  sectionsUI.forEach(row=>{
+    if(!row.include) return;
+    const raw = String(body[row.key] ?? "");
+    const rendered = renderTpl(raw, dataModel);
+    if (rendered.trim()) lines.push(rendered);
+  });
+  return lines.join("\n\n");
+}
+
+function refreshPreview() {
+  const merged = buildMergedBody();
+  $("bodyPreview").value = merged;
+  $("finalText").value = merged;
+  window.finalText = merged;                       // <-- the variable you asked for
+  $("lenBadge").textContent = `${merged.length} chars`;
+}
+
+function syncAll() {
+  refreshRawEditor();
+  refreshPreview();
+}
+
+/* ---------------- Raw JSON ---------------- */
+const toggleRaw = $("toggleRaw");
+const rawEditor = $("rawEditor");
+const simpleEditor = $("simpleEditor");
+const rawJsonTA = $("rawJson");
+
+function refreshRawEditor(){ rawJsonTA.value = JSON.stringify(dataModel, null, 2); }
+
+/* ---------------- Init / Events ---------------- */
+$("useSample").addEventListener("click", () => {
+  const s = $("sampleJSON").textContent;
+  $("jsonPaste").value = s.trim();
+});
+
+$("applyJson").addEventListener("click", () => {
+  const txt = $("jsonPaste").value || "{}";
+  try {
+    const parsed = JSON.parse(txt);
+    if (!isPlainObject(parsed)) throw new Error("Root must be an object.");
+    dataModel = parsed;
+    renderSimpleEditor(dataModel);
+    initSections();
+    renderSections();
+    syncAll();
+  } catch (e) { alert("Invalid JSON: " + (e?.message || e)); }
+});
+
+$("exportJson").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(dataModel, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "dataModel.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$("applyRaw").addEventListener("click", () => {
+  try {
+    const parsed = JSON.parse(rawJsonTA.value);
+    if (!isPlainObject(parsed)) throw new Error("Root must be a JSON object.");
+    dataModel = parsed;
+    renderSimpleEditor(dataModel);
+    initSections();
+    renderSections();
+    syncAll();
+  } catch (e) { alert("Invalid JSON: " + (e?.message || e)); }
+});
+
+toggleRaw.addEventListener("change", () => {
+  const showRaw = toggleRaw.checked;
+  rawEditor.style.display = showRaw ? "block" : "none";
+  simpleEditor.style.display = showRaw ? "none" : "block";
+  if (showRaw) refreshRawEditor();
+});
+
+$("copyText").addEventListener("click", async () => {
+  await navigator.clipboard.writeText($("finalText").value);
+});
+
+$("downloadTxt").addEventListener("click", () => {
+  const blob = new Blob([$("finalText").value], {type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "report.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+/* Boot with the sample JSON so it works out of the box */
+(function init() {
+  $("useSample").click();         // load sample into textarea
+  $("applyJson").click();         // apply it to the editor
+})();
+</script>
+</body>
+</html>

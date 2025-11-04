@@ -1,0 +1,14 @@
+{
+  "title": "Sample Report A",
+  "patientName": "Alexandru Filip",
+  "date": "2025-11-04",
+  "notes": "Loaded from templateA.json",
+  "doctorName": "Dr. George Muntean",
+  "numar_total_fragmente": 12,
+  "body": {
+    "intro": "Materialul examinat este alcatuit din {numar_total_fragmente}",
+    "middle": "",
+    "end": ""
+  },
+  "diagnostic": "Diagnostic: ..."
+}
