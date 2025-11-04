@@ -1,477 +1,410 @@
 <!doctype html>
-<html lang="en">
+<html lang="ro">
 <head>
 <meta charset="utf-8" />
-<title>Report Builder (text only)</title>
+<title>Fragmente prostată – generator text (grupuri + per-rând include)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-:root { --bd:#e5e7eb; --muted:#64748b; }
-body { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; margin:24px; }
-.grid { display:grid; gap:16px; }
-.row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
-.card { border:1px solid var(--bd); border-radius:12px; padding:16px; background:#fff; }
-label { font-weight:600; }
-.inline { display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.badge { background:#e2e8f0; border-radius:999px; padding:2px 8px; font-size:12px; }
-.muted { color:var(--muted); font-size:12px; }
-input[type="text"], input[type="number"] { width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:8px; }
-input[type="checkbox"] { transform:scale(1.2); }
-textarea { width:100%; min-height:140px; padding:8px; border:1px solid #cbd5e1; border-radius:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; background:#0ea5e9; color:white; }
-button.secondary { background:#64748b; }
-table { border-collapse:collapse; width:100%; }
-th, td { border:1px solid #d1d5db; padding:8px; text-align:left; }
-.pill { background:#f1f5f9; padding:4px 8px; border-radius:999px; font-size:12px; }
-.kv { display:grid; grid-template-columns: 220px 1fr; gap:8px; align-items:center; }
-.sections { list-style:none; padding:0; margin:0; display:grid; gap:12px; }
-.section { border:1px solid var(--bd); border-radius:12px; padding:12px; background:#fff; }
-.section-header { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.section-handle { cursor:grab; user-select:none; font-weight:700; padding:2px 8px; border-radius:6px; background:#f1f5f9; }
-.section-name { width:200px; }
-.section-controls button { margin-left:6px; }
-.section textarea { min-height:100px; }
-pre.small { white-space:pre-wrap; font-size:12px; color:#475569; }
+  :root { --bd:#e5e7eb; --muted:#64748b; }
+  body { font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; margin:24px; }
+  h1,h2 { margin: 0 0 8px 0; }
+  .muted { color: var(--muted); font-size:12px; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:12px; }
+  .card { border:1px solid var(--bd); border-radius:12px; padding:16px; background:#fff; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { border:1px solid var(--bd); padding:6px; text-align:left; }
+  th { background:#f8fafc; }
+  input[type="number"], input[type="text"] { width:100%; box-sizing:border-box; padding:6px; }
+  textarea { width:100%; min-height:260px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+             border:1px solid var(--bd); border-radius:8px; padding:10px; }
+  .inline { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .badge { background:#e2e8f0; border-radius:999px; padding:2px 8px; font-size:12px; }
+  .right { text-align:right; }
+  button { padding:10px 14px; border:0; border-radius:10px; cursor:pointer; background:#0ea5e9; color:white; }
+  button.secondary { background:#64748b; }
+  .switch { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border:1px solid var(--bd); border-radius:999px; }
+  .center { text-align:center; }
 </style>
 </head>
 <body>
-<h1>Report Builder (text only)</h1>
-<p class="muted">This version avoids DOCX completely. It builds the final text in memory (shown below). You can copy/export it. Later we’ll generate DOCX from that variable.</p>
+<h1>Fragmente prostatice – introducere date & generare text</h1>
+<p class="muted">
+  Bifează grupurile/fragmentele de inclus. Pentru fiecare fragment completezi: <b>X</b> (mm), <b>Y</b> (mm),
+  <b>A</b> (pattern dominant), <b>B%</b>, <b>C</b> (pattern secundar), <b>D%</b>. <b>Z%</b> = round(100 * Y / X).
+</p>
 
 <div class="row">
-  <div class="card grid">
-    <h2>1) Load / Save JSON</h2>
-    <div class="inline">
-      <button id="useSample" class="secondary" type="button">Load sample JSON</button>
-      <button id="exportJson" class="secondary" type="button">Export JSON</button>
+  <div class="card">
+    <h2>1) Configurare & Fragmente</h2>
+
+    <div class="inline" style="gap:12px; margin-bottom:8px;">
+      <label for="fragCount"><b>Număr fragmente</b></label>
+      <input id="fragCount" type="number" min="1" max="16" value="16" style="width:100px" />
+      <button id="applyCount" class="secondary" type="button">Aplică</button>
+      <button id="addOne" class="secondary" type="button">+1</button>
+      <button id="removeOne" class="secondary" type="button">-1</button>
+      <span id="totalBadge" class="badge">Total: 16</span>
+      <button id="clearAll" class="secondary" type="button">Golește toate câmpurile</button>
     </div>
-    <textarea id="jsonPaste" spellcheck="false" placeholder="Paste JSON here..."></textarea>
-    <div class="inline">
-      <button id="applyJson" type="button">Apply JSON to form</button>
-      <span class="muted">Applies the JSON above into the form/tree editor.</span>
+
+    <div class="inline" style="gap:12px; margin-bottom:8px;">
+      <label class="switch"><input type="checkbox" id="incRight" checked> Include lob drept</label>
+      <label class="switch"><input type="checkbox" id="incLeft" checked> Include lob stang</label>
+      <label class="switch"><input type="checkbox" id="incNerves" checked> Include N1–N4</label>
     </div>
-    <pre class="small">Tip: You can edit using the form or raw JSON. Everything stays in sync.</pre>
+
+    <div style="overflow:auto;">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th class="center">✔</th>
+            <th>#</th>
+            <th>Nume fragment</th>
+            <th title="Lungimea fragmentului (mm)">X (mm)</th>
+            <th title="Lungimea infiltrată (mm)">Y (mm)</th>
+            <th>Z (%)</th>
+            <th title="Pattern dominant Gleason">A</th>
+            <th title="Procent dominant">% B</th>
+            <th title="Pattern secundar Gleason">C</th>
+            <th title="Procent secundar">% D</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot>
+          <tr>
+            <th colspan="3" class="right">Totaluri (pe grupurile & rândurile bifate):</th>
+            <th id="sumX">0</th>
+            <th id="sumY">0</th>
+            <th id="sumZ">0</th>
+            <th class="right">—</th>
+            <th id="sumB">0</th>
+            <th class="right">—</th>
+            <th id="sumD">0</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:8px;">
+      E = ΣY &nbsp; | &nbsp; F = ΣZ &nbsp; | &nbsp; G = ΣX &nbsp; | &nbsp; H = ΣB &nbsp; | &nbsp; I = ΣD
+      (numai pe elementele bifate și din grupurile selectate)
+    </p>
   </div>
 
-  <div class="card grid">
-    <h2>2) Final text</h2>
-    <p class="muted">This is the merged output we’ll use to make the DOCX later.</p>
-    <textarea id="finalText" readonly></textarea>
-    <div class="inline">
-      <button id="copyText" class="secondary" type="button">Copy to clipboard</button>
-      <button id="downloadTxt" class="secondary" type="button">Download .txt</button>
-      <span id="lenBadge" class="badge">0 chars</span>
+  <div class="card">
+    <h2>2) Text rezultat</h2>
+    <p class="muted">Se regenerează automat. Variabila JS este <code>window.finalText</code>.</p>
+    <textarea id="out"></textarea>
+    <div class="inline" style="margin-top:8px;">
+      <button id="copy" type="button" class="secondary">Copiază</button>
+      <button id="download" type="button" class="secondary">Descarcă .txt</button>
+      <span id="charCount" class="badge">0 chars</span>
     </div>
   </div>
 </div>
-
-<div class="card grid">
-  <div class="inline" style="justify-content:space-between; width:100%;">
-    <h2 style="margin:0;">3) Edit data (form editor)</h2>
-    <div class="inline">
-      <label for="toggleRaw" class="pill">Show Raw JSON</label>
-      <input id="toggleRaw" type="checkbox" />
-    </div>
-  </div>
-
-  <!-- FORM EDITOR -->
-  <div id="simpleEditor" class="grid">
-    <h3>Fields</h3>
-    <div id="kvContainer" class="grid"></div>
-    <div id="tablesContainer" class="grid"></div>
-  </div>
-
-  <!-- RAW JSON -->
-  <div id="rawEditor" style="display:none;">
-    <textarea id="rawJson" spellcheck="false"></textarea>
-    <div class="inline" style="gap:8px; margin-top:8px;">
-      <button id="applyRaw" class="secondary" type="button">Apply raw JSON to form</button>
-    </div>
-  </div>
-</div>
-
-<div class="card grid">
-  <h2>4) Body Sections (order & merge)</h2>
-  <p class="muted">We read <code>body</code> from JSON. Use {placeholders} like <code>{title}</code>, <code>{patientName}</code>, <code>{items[0].name}</code>. Reorder with ↑/↓ or drag ↕. Toggle include with the checkbox.</p>
-
-  <div class="inline" style="gap:8px;">
-    <button id="addSection" class="secondary" type="button">+ Add section</button>
-  </div>
-
-  <ul id="sections" class="sections"></ul>
-
-  <h3>Preview merged body</h3>
-  <textarea id="bodyPreview" readonly></textarea>
-</div>
-
-<!-- A sample JSON embedded so the page works offline immediately -->
-<script type="application/json" id="sampleJSON">
-{
-  "title": "Sample Report A",
-  "patientName": "Alexandru Filip",
-  "date": "2025-11-04",
-  "notes": "Loaded from inline sample JSON.",
-  "doctorName": "Dr. George Muntean",
-  "items": [
-    { "name": "prostata a", "value": [
-      { "name": "test b1", "value": 3 },
-      { "name": "test b2", "value": 2 }
-    ] },
-    { "name": "prostata b", "value": [
-      { "name": "test b1", "value": 3 },
-      { "name": "test b2", "value": 2 }
-    ] }
-  ],
-  "body": {
-    "intro": "{title}\\nMaterialul examinat este alcatuit din {numar_total_fragmente}",
-    "middle": "",
-    "end": ""
-  },
-  "diagnostic": "Diagnostic: ..."
-}
-</script>
 
 <script>
-/* ---------------- State ---------------- */
-let dataModel = {};       // current JSON object (editable)
-let sectionsUI = [];      // [{key, include}]
-window.finalText = "";    // <- your requested variable with the merged content
+/* ------------------ Config / Labels ------------------ */
+const FRAGMENTS_ALL = [
+  // lob drept (0..5)
+  "lob drept: lateral baza",
+  "lob drept: lateral mijloc",
+  "lob drept: lateral varf",
+  "lob drept: medial baza",
+  "lob drept: medial mijloc",
+  "lob drept: medial varf",
+  // lob stang (6..11)
+  "lob stang: lateral baza",
+  "lob stang: lateral mijloc",
+  "lob stang: lateral varf",
+  "lob stang: medial baza",
+  "lob stang: medial mijloc",
+  "lob stang: medial varf",
+  // N1–N4 (12..15)
+  "N1","N2","N3","N4",
+];
 
-/* ---------------- Utils ---------------- */
+const RIGHT_LOCATIONS = ["lateral baza","lateral mijloc","lateral varf","medial baza","medial mijloc","medial varf"];
+const LEFT_LOCATIONS  = ["lateral baza","lateral mijloc","lateral varf","medial baza","medial mijloc","medial varf"];
+const MAX_FRAG = 16;
+
+/* ------------------ State ------------------ */
+let rows = [];      // array of {name, include, X,Y,Z,A,B,C,D}
+let fragCount = 16; // current number
+let includeRight = true;
+let includeLeft  = true;
+let includeNerves = true;
+
+/* ------------------ DOM ------------------ */
 const $ = (id) => document.getElementById(id);
-const isPrimitive = (v) => ["string","number","boolean"].includes(typeof v);
-const isPlainObject = (v) => v && typeof v === "object" && !Array.isArray(v);
-const clone = (o) => JSON.parse(JSON.stringify(o));
+const tbody = $("tbody");
+const sumX = $("sumX"), sumY = $("sumY"), sumZ = $("sumZ"), sumB = $("sumB"), sumD = $("sumD");
+const out = $("out"), charCount = $("charCount"), totalBadge = $("totalBadge");
 
-function getByPath(root, pathStr) {
-  const parts = pathStr.split('.').flatMap(p => {
-    const m = [...p.matchAll(/([^\[\]]+)|\[(\d+)\]/g)];
-    return m.map(g => g[1] ?? Number(g[2]));
-  });
-  let cur = root;
-  for (const key of parts) {
-    if (cur == null) return "";
-    cur = cur[key];
+/* ------------------ Helpers ------------------ */
+function newRow(name) { return { name, include: true, X:"", Y:"", Z:0, A:"", B:"", C:"", D:"" }; }
+
+function ensureRowCount(n) {
+  if (n < 1) n = 1;
+  if (n > MAX_FRAG) n = MAX_FRAG;
+  const current = rows.length;
+  if (n > current) {
+    for (let i=current; i<n; i++) rows.push(newRow(FRAGMENTS_ALL[i]));
+  } else if (n < current) {
+    rows.length = n;
   }
-  return (cur === undefined || cur === null) ? "" : cur;
+  for (let i=0; i<n; i++) rows[i].name = FRAGMENTS_ALL[i];
+  fragCount = n;
+  $("fragCount").value = String(n);
+  totalBadge.textContent = `Total: ${n}`;
 }
 
-function renderTpl(s, root) {
-  return s.replace(/\{([^}]+)\}/g, (_, expr) => {
-    try { return String(getByPath(root, expr.trim())); }
-    catch { return ""; }
+// group indices (bounded by current rows length)
+function indicesForGroup(group) {
+  const res = [];
+  if (group === "right") { for (let i=0;i<6 && i<rows.length;i++) res.push(i); }
+  if (group === "left")  { for (let i=6;i<12 && i<rows.length;i++) res.push(i); }
+  if (group === "nerves"){ for (let i=12;i<16 && i<rows.length;i++) res.push(i); }
+  return res;
+}
+function groupEnabled(i) {
+  if (i < 6) return includeRight;
+  if (i < 12) return includeLeft;
+  return includeNerves;
+}
+function includedIndices() {
+  // row must be checked and its group enabled
+  return rows
+    .map((r, i) => ({ i, ok: r.include && groupEnabled(i) }))
+    .filter(x => x.ok)
+    .map(x => x.i);
+}
+
+/* ------------------ Table rendering ------------------ */
+function buildTable() {
+  tbody.innerHTML = "";
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+
+    // include checkbox
+    const tdInc = document.createElement("td"); tdInc.className = "center";
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = r.include;
+    cb.addEventListener("change", () => { r.include = cb.checked; recompute(); });
+    tdInc.appendChild(cb); tr.appendChild(tdInc);
+
+    // index
+    const tdIdx = document.createElement("td"); tdIdx.textContent = i+1; tr.appendChild(tdIdx);
+
+    // name
+    const tdName = document.createElement("td"); tdName.textContent = r.name; tr.appendChild(tdName);
+
+    // X
+    const tdX = document.createElement("td");
+    const inX = document.createElement("input"); inX.type="number"; inX.step="any"; inX.value=r.X;
+    inX.addEventListener("input", ()=>{ r.X = inX.value; recompute(); });
+    tdX.appendChild(inX); tr.appendChild(tdX);
+
+    // Y
+    const tdY = document.createElement("td");
+    const inY = document.createElement("input"); inY.type="number"; inY.step="any"; inY.value=r.Y;
+    inY.addEventListener("input", ()=>{ r.Y = inY.value; recompute(); });
+    tdY.appendChild(inY); tr.appendChild(tdY);
+
+    // Z (computed)
+    const tdZ = document.createElement("td"); tdZ.textContent = r.Z || 0; tr.appendChild(tdZ);
+
+    // A
+    const tdA = document.createElement("td");
+    const inA = document.createElement("input"); inA.type="text"; inA.value=r.A;
+    inA.addEventListener("input", ()=>{ r.A = inA.value; recompute(false); });
+    tdA.appendChild(inA); tr.appendChild(tdA);
+
+    // B
+    const tdB = document.createElement("td");
+    const inB = document.createElement("input"); inB.type="number"; inB.step="any"; inB.value=r.B;
+    inB.addEventListener("input", ()=>{ r.B = inB.value; recompute(false); });
+    tdB.appendChild(inB); tr.appendChild(tdB);
+
+    // C
+    const tdC = document.createElement("td");
+    const inC = document.createElement("input"); inC.type="text"; inC.value=r.C;
+    inC.addEventListener("input", ()=>{ r.C = inC.value; recompute(false); });
+    tdC.appendChild(inC); tr.appendChild(tdC);
+
+    // D
+    const tdD = document.createElement("td");
+    const inD = document.createElement("input"); inD.type="number"; inD.step="any"; inD.value=r.D;
+    inD.addEventListener("input", ()=>{ r.D = inD.value; recompute(false); });
+    tdD.appendChild(inD); tr.appendChild(tdD);
+
+    tbody.appendChild(tr);
   });
 }
 
-/* ---------------- Form Editor (recursive) ---------------- */
-const kvContainer = $("kvContainer");
-const tablesContainer = $("tablesContainer");
-
-function addFieldControls(parentObj, containerEl) {
-  const wrap = document.createElement("div");
-  wrap.className = "inline";
-  wrap.style.gap = "8px";
-
-  const nameInput = document.createElement("input");
-  nameInput.type = "text";
-  nameInput.placeholder = "new field name";
-  nameInput.style.minWidth = "160px";
-
-  const typeSelect = document.createElement("select");
-  ["string","number","boolean","object","array-objects","array-primitives"].forEach(t=>{
-    const o=document.createElement("option");
-    o.value=t; o.textContent=t; typeSelect.appendChild(o);
+/* ------------------ Computations ------------------ */
+function recompute(updateZCells = true) {
+  rows.forEach(r => {
+    const X = Number(r.X), Y = Number(r.Y);
+    r.Z = (isFinite(X) && X>0 && isFinite(Y) && Y>=0) ? Math.round((Y/X)*100) : 0;
   });
 
-  const addBtn = document.createElement("button");
-  addBtn.type = "button"; addBtn.className = "secondary"; addBtn.textContent = "Add field";
+  const idxs = includedIndices();
+  const E = idxs.reduce((s,i)=> s + (Number(rows[i].Y)||0), 0);
+  const F = idxs.reduce((s,i)=> s + (Number(rows[i].Z)||0), 0);
+  const G = idxs.reduce((s,i)=> s + (Number(rows[i].X)||0), 0);
+  const H = idxs.reduce((s,i)=> s + (Number(rows[i].B)||0), 0);
+  const I = idxs.reduce((s,i)=> s + (Number(rows[i].D)||0), 0);
 
-  addBtn.addEventListener("click", () => {
-    const k = (nameInput.value || "").trim();
-    if (!k) { alert("Field name required"); return; }
-    if (k in parentObj) { alert(`Field "${k}" already exists`); return; }
+  sumX.textContent = G.toString();
+  sumY.textContent = E.toString();
+  sumZ.textContent = F.toString();
+  sumB.textContent = H.toString();
+  sumD.textContent = I.toString();
 
-    const t = typeSelect.value;
-    switch (t) {
-      case "string": parentObj[k] = ""; break;
-      case "number": parentObj[k] = 0; break;
-      case "boolean": parentObj[k] = false; break;
-      case "object": parentObj[k] = {}; break;
-      case "array-objects": parentObj[k] = [ {} ]; break;
-      case "array-primitives": parentObj[k] = [ "" ]; break;
-      default: parentObj[k] = "";
-    }
-    renderSimpleEditor(dataModel);
-    refreshRawEditor();
-    refreshPreview();
-  });
-
-  wrap.append(nameInput, typeSelect, addBtn);
-  containerEl.appendChild(wrap);
-}
-
-function renderNode(key, value, parent, path, container) {
-  if (isPrimitive(value)) {
-    const row = document.createElement("div"); row.className = "kv";
-    const label = document.createElement("label"); label.textContent = key;
-    const input = document.createElement("input");
-
-    if (typeof value === "number") {
-      input.type = "number"; input.step = "any"; input.value = String(value);
-      input.addEventListener("input", () => { parent[key] = Number(input.value || 0); syncAll(); });
-    } else if (typeof value === "boolean") {
-      input.type="checkbox"; input.checked=value;
-      input.addEventListener("change", () => { parent[key] = input.checked; syncAll(); });
-    } else {
-      input.type="text"; input.value=value ?? "";
-      input.addEventListener("input", () => { parent[key] = input.value; syncAll(); });
-    }
-    row.append(label, input); container.appendChild(row); return;
-  }
-
-  if (Array.isArray(value)) {
-    const header = document.createElement("h3");
-    header.textContent = `${key} (array${value.length && typeof value[0] === "object" ? " of objects" : ""})`;
-    container.appendChild(header);
-
-    if (!value.length || isPrimitive(value[0])) {
-      const list = document.createElement("div"); list.className = "grid";
-      value.forEach((item, idx) => {
-        const row = document.createElement("div"); row.className = "kv";
-        const label = document.createElement("label"); label.textContent = `${key}[${idx}]`;
-        const input = document.createElement("input");
-        if (typeof item === "number") {
-          input.type="number"; input.step="any"; input.value=String(item);
-          input.addEventListener("input", () => { parent[key][idx] = Number(input.value || 0); syncAll(); });
-        } else {
-          input.type="text"; input.value=String(item ?? "");
-          input.addEventListener("input", () => { parent[key][idx] = input.value; syncAll(); });
-        }
-        const del = document.createElement("button"); del.type="button"; del.className="secondary"; del.textContent="Remove";
-        del.addEventListener("click", () => { parent[key].splice(idx,1); renderSimpleEditor(dataModel); syncAll(); });
-        row.append(label,input,del); list.appendChild(row);
-      });
-      const add = document.createElement("button"); add.type="button"; add.textContent=`+ Add ${key} item`;
-      add.addEventListener("click", () => { parent[key].push(""); renderSimpleEditor(dataModel); syncAll(); });
-      container.append(list,add); return;
-    }
-
-    const wrapper = document.createElement("div"); wrapper.className = "grid";
-    const keysUnion = Array.from(new Set(value.flatMap(o => Object.keys(o || {}))));
-    if (keysUnion.length === 0) keysUnion.push("name","value");
-
-    value.forEach((rowObj, idx) => {
-      const card = document.createElement("div"); card.className = "card";
-      const title = document.createElement("div"); title.className="inline";
-      const badge = document.createElement("span"); badge.className="badge"; badge.textContent=`${key}[${idx}]`;
-      const remove = document.createElement("button"); remove.type="button"; remove.className="secondary"; remove.textContent="Remove";
-      remove.addEventListener("click", () => { parent[key].splice(idx,1); renderSimpleEditor(dataModel); syncAll(); });
-      title.append(badge, remove); card.appendChild(title);
-
-      keysUnion.forEach((col) => {
-        if (!(col in rowObj)) return;
-        const sub = document.createElement("div");
-        renderNode(col, rowObj[col], rowObj, [...path, key, String(idx), col], sub);
-        card.appendChild(sub);
-      });
-
-      Object.keys(rowObj).forEach((col) => {
-        if (keysUnion.includes(col)) return;
-        const sub = document.createElement("div");
-        renderNode(col, rowObj[col], rowObj, [...path, key, String(idx), col], sub);
-        card.appendChild(sub);
-      });
-
-      addFieldControls(rowObj, card);
-      wrapper.appendChild(card);
+  if (updateZCells) {
+    [...tbody.querySelectorAll("tr")].forEach((tr, idx) => {
+      const zCell = tr.children[5]; // ✔, #, name, X, Y, Z, A, B, C, D
+      zCell.textContent = rows[idx].Z || 0;
     });
-
-    const addRow = document.createElement("button"); addRow.type="button"; addRow.textContent=`+ Add ${key} row`;
-    addRow.addEventListener("click", () => {
-      const newRow = {}; keysUnion.forEach(col => newRow[col] = "");
-      parent[key].push(newRow);
-      renderSimpleEditor(dataModel); syncAll();
-    });
-
-    container.append(wrapper, addRow); return;
   }
 
-  if (isPlainObject(value)) {
-    const section = document.createElement("div");
-    const header = document.createElement("h3"); header.textContent = `${key} (object)`;
-    section.appendChild(header);
+  window.finalText = buildReportText(E,F,G,H,I);
+  out.value = window.finalText;
+  charCount.textContent = `${window.finalText.length} chars`;
+}
 
-    Object.keys(value).forEach((k2) => {
-      const sub = document.createElement("div");
-      renderNode(k2, value[k2], value, [...path, key, k2], sub);
-      section.appendChild(sub);
-    });
+/* ------------------ Text building with toggles + per-row include ------------------ */
+function rowIncluded(i) { return rows[i] && rows[i].include && groupEnabled(i); }
 
-    addFieldControls(value, section);
-    container.appendChild(section);
+function fragmentLineForX(prefix, startIdx, locations, includeGroup) {
+  if (!includeGroup) return null;
+  const parts = locations
+    .map((loc, k) => {
+      const idx = startIdx + k;
+      if (idx >= rows.length || !rowIncluded(idx)) return null;
+      const r = rows[idx], x = r?.X || "x";
+      return `${loc} - cu lungimea de ${x} mm`;
+    })
+    .filter(Boolean);
+  if (!parts.length) return null;
+  return `- ${prefix}: ${parts.join(", ")};`;
+}
+function fragmentInfiltrationLines(prefix, startIdx, locations, includeGroup) {
+  if (!includeGroup) return null;
+  const lines = locations
+    .map((loc, k) => {
+      const idx = startIdx + k;
+      if (idx >= rows.length || !rowIncluded(idx)) return null;
+      const r = rows[idx];
+      const y = r?.Y || "y";
+      const z = (r?.Z ?? "z");
+      const a = r?.A || "a";
+      const b = r?.B || "b";
+      const c = r?.C || "c";
+      const d = r?.D || "d";
+      return `${loc}: pe o lungime de ${y} mm (${z}%), cu pattern dominant Gleason ${a} (${b}%) si pattern secundar Gleason ${c} (${d}%),`;
+    })
+    .filter(Boolean);
+  if (!lines.length) return null;
+  return `-  ${prefix}:\n` + lines.join("\n");
+}
+function nervesXLine(includeGroup) {
+  if (!includeGroup) return null;
+  const parts = [];
+  for (let i=12; i<16 && i<rows.length; i++) {
+    if (!rowIncluded(i)) continue;
+    const label = `N${i-11}`;
+    const x = rows[i].X || "x";
+    parts.push(`${label}: ${x} mm`);
   }
+  if (!parts.length) return null;
+  return parts.join(", ") + ".";
 }
-
-function renderSimpleEditor(obj) {
-  kvContainer.innerHTML = "";
-  tablesContainer.innerHTML = "";
-  Object.keys(obj).forEach((k) => {
-    const v = obj[k];
-    (isPrimitive(v) || isPlainObject(v))
-      ? renderNode(k, v, obj, [k], kvContainer)
-      : renderNode(k, v, obj, [k], tablesContainer);
-  });
-}
-
-/* ---------------- Body Sections ---------------- */
-const sectionsList = $("sections");
-const bodyPreview = $("bodyPreview");
-
-function initSections() {
-  const body = isPlainObject(dataModel.body) ? dataModel.body : (dataModel.body = {});
-  sectionsUI = Object.keys(body).map(k => ({ key: k, include: true }));
-}
-
-function renderSections() {
-  const body = dataModel.body || {};
-  sectionsList.innerHTML = "";
-  sectionsUI.forEach((row, idx) => {
-    const li = document.createElement("li"); li.className="section"; li.draggable=true;
-
-    const head = document.createElement("div"); head.className="section-header";
-    const handle = document.createElement("span"); handle.className="section-handle"; handle.textContent="↕";
-    const include = document.createElement("input"); include.type="checkbox"; include.checked=row.include;
-    include.addEventListener("change",()=>{ row.include = include.checked; refreshPreview(); });
-
-    const nameInput = document.createElement("input"); nameInput.className="section-name";
-    nameInput.type="text"; nameInput.value=row.key;
-    nameInput.addEventListener("change", () => {
-      const old=row.key, neu=nameInput.value.trim(); if(!neu){ nameInput.value=old; return; }
-      if (old!==neu){ body[neu]=body[old]; delete body[old]; row.key=neu; syncAll(); }
-    });
-
-    const ctrls = document.createElement("div"); ctrls.className="section-controls";
-    const up=document.createElement("button"); up.className="secondary"; up.textContent="↑";
-    const down=document.createElement("button"); down.className="secondary"; down.textContent="↓";
-    const del=document.createElement("button"); del.className="secondary"; del.textContent="Remove";
-    up.addEventListener("click",()=>{ if(idx>0){ const t=sectionsUI[idx-1]; sectionsUI[idx-1]=sectionsUI[idx]; sectionsUI[idx]=t; renderSections(); refreshPreview(); }});
-    down.addEventListener("click",()=>{ if(idx<sectionsUI.length-1){ const t=sectionsUI[idx+1]; sectionsUI[idx+1]=sectionsUI[idx]; sectionsUI[idx]=t; renderSections(); refreshPreview(); }});
-    del.addEventListener("click",()=>{ delete body[row.key]; sectionsUI.splice(idx,1); renderSections(); syncAll(); });
-    ctrls.append(up,down,del);
-
-    head.append(handle, include, nameInput, ctrls);
-    li.appendChild(head);
-
-    const ta = document.createElement("textarea");
-    ta.value = String(body[row.key] ?? "");
-    ta.addEventListener("input",()=>{ body[row.key]=ta.value; syncAll(); });
-    li.appendChild(ta);
-
-    li.addEventListener("dragstart",(e)=>{ e.dataTransfer.setData("text/plain", idx.toString()); });
-    li.addEventListener("dragover",(e)=>{ e.preventDefault(); });
-    li.addEventListener("drop",(e)=>{ e.preventDefault(); const from=Number(e.dataTransfer.getData("text/plain")); if(from===idx) return;
-      const moved=sectionsUI.splice(from,1)[0]; sectionsUI.splice(idx,0,moved); renderSections(); refreshPreview(); });
-
-    sectionsList.appendChild(li);
-  });
-}
-
-function buildMergedBody() {
-  const body = dataModel.body || {};
+function nervesInfiltrationLines(includeGroup) {
+  if (!includeGroup) return null;
   const lines = [];
-  sectionsUI.forEach(row=>{
-    if(!row.include) return;
-    const raw = String(body[row.key] ?? "");
-    const rendered = renderTpl(raw, dataModel);
-    if (rendered.trim()) lines.push(rendered);
-  });
-  return lines.join("\n\n");
+  for (let i=12; i<16 && i<rows.length; i++) {
+    if (!rowIncluded(i)) continue;
+    const label = `N${i-11}`;
+    const r = rows[i];
+    const y = r.Y || "y", z = (r.Z ?? "z");
+    const a = r.A || "a", b = r.B || "b", c = r.C || "c", d = r.D || "d";
+    lines.push(`${label}: pe o lungime de ${y} mm (${z}%), cu pattern dominant Gleason ${a} (${b}%) si pattern secundar Gleason ${c} (${d}%).`);
+  }
+  return lines.join("\n");
 }
 
-function refreshPreview() {
-  const merged = buildMergedBody();
-  $("bodyPreview").value = merged;
-  $("finalText").value = merged;
-  window.finalText = merged;                       // <-- the variable you asked for
-  $("lenBadge").textContent = `${merged.length} chars`;
+function buildReportText(E,F,G,H,I) {
+  const N = includedIndices().length; // only included rows in enabled groups
+
+  const rightX = fragmentLineForX("lob drept", 0, RIGHT_LOCATIONS, includeRight);
+  const leftX  = fragmentLineForX("lob stang", 6, LEFT_LOCATIONS, includeLeft);
+  const nervesX = nervesXLine(includeNerves);
+
+  const parts1 = [
+    `Materialul examinat este alcatuit din ${N} fragmente prostatice biopunctate astfel:`,
+    rightX, leftX, nervesX ? `\n      ${nervesX}` : null
+  ].filter(Boolean).join("\n");
+
+  const rightInf = fragmentInfiltrationLines("lob drept", 0, RIGHT_LOCATIONS, includeRight);
+  const leftInf  = fragmentInfiltrationLines("lob stang", 6, LEFT_LOCATIONS, includeLeft);
+  const nervesInf = nervesInfiltrationLines(includeNerves);
+
+  const parts2 = [
+    `Sunt infiltrate de un adenocarcinom prostatic acinar astfel:`,
+    rightInf, "", leftInf, "", nervesInf
+  ].filter(s => s !== null).join("\n");
+
+  const summary =
+`Sunt infiltrati in total ${E} mm (${F}%), din cei ${G} mm ai fragmentelor prelevate,  fragmente pozitive din totalul de .       
+
+Nu se identifica aspecte de extensie extraprostatica, infiltrare perineurala sau invazie angiolimfatica (in aceste sectiuni).
+
+Prezinta hiperplazie glandulara multifocala, glande atrofice si un moderat infiltrat inflamator limfocitar in stroma cu abcese glandulare focale.
+
+Total procent pattern dominant: ${H}
+Total procent pattern secundar: ${I}
+
+Diagnostic: 
+Adenocarcinom prostatic acinar scor Gleason  (+), grupa de gradare  (ISUP/OMS 2022).
+
+C 61.9   M-8140/3`;
+
+  return `${parts1}\n\n${parts2}\n\n${summary}`.replace(/\t/g,"");
 }
 
-function syncAll() {
-  refreshRawEditor();
-  refreshPreview();
+/* ------------------ Events & Init ------------------ */
+function resetAllValues() {
+  rows.forEach(r => { r.X=""; r.Y=""; r.Z=0; r.A=""; r.B=""; r.C=""; r.D=""; r.include=true; });
+  buildTable(); recompute();
 }
 
-/* ---------------- Raw JSON ---------------- */
-const toggleRaw = $("toggleRaw");
-const rawEditor = $("rawEditor");
-const simpleEditor = $("simpleEditor");
-const rawJsonTA = $("rawJson");
-
-function refreshRawEditor(){ rawJsonTA.value = JSON.stringify(dataModel, null, 2); }
-
-/* ---------------- Init / Events ---------------- */
-$("useSample").addEventListener("click", () => {
-  const s = $("sampleJSON").textContent;
-  $("jsonPaste").value = s.trim();
+$("applyCount").addEventListener("click", () => {
+  const val = Number($("fragCount").value);
+  ensureRowCount(isFinite(val) ? val : fragCount);
+  buildTable(); recompute();
 });
+$("addOne").addEventListener("click", () => { ensureRowCount(fragCount + 1); buildTable(); recompute(); });
+$("removeOne").addEventListener("click", () => { ensureRowCount(fragCount - 1); buildTable(); recompute(); });
+$("clearAll").addEventListener("click", resetAllValues);
 
-$("applyJson").addEventListener("click", () => {
-  const txt = $("jsonPaste").value || "{}";
-  try {
-    const parsed = JSON.parse(txt);
-    if (!isPlainObject(parsed)) throw new Error("Root must be an object.");
-    dataModel = parsed;
-    renderSimpleEditor(dataModel);
-    initSections();
-    renderSections();
-    syncAll();
-  } catch (e) { alert("Invalid JSON: " + (e?.message || e)); }
-});
+$("incRight").addEventListener("change", e => { includeRight = e.target.checked; recompute(); });
+$("incLeft").addEventListener("change", e => { includeLeft  = e.target.checked; recompute(); });
+$("incNerves").addEventListener("change", e => { includeNerves = e.target.checked; recompute(); });
 
-$("exportJson").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(dataModel, null, 2)], {type:"application/json"});
+$("copy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(out.value); } catch {} });
+$("download").addEventListener("click", () => {
+  const blob = new Blob([out.value], {type:"text/plain"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "dataModel.json";
+  a.download = "raport.txt";
   a.click();
   URL.revokeObjectURL(a.href);
 });
 
-$("applyRaw").addEventListener("click", () => {
-  try {
-    const parsed = JSON.parse(rawJsonTA.value);
-    if (!isPlainObject(parsed)) throw new Error("Root must be a JSON object.");
-    dataModel = parsed;
-    renderSimpleEditor(dataModel);
-    initSections();
-    renderSections();
-    syncAll();
-  } catch (e) { alert("Invalid JSON: " + (e?.message || e)); }
-});
-
-toggleRaw.addEventListener("change", () => {
-  const showRaw = toggleRaw.checked;
-  rawEditor.style.display = showRaw ? "block" : "none";
-  simpleEditor.style.display = showRaw ? "none" : "block";
-  if (showRaw) refreshRawEditor();
-});
-
-$("copyText").addEventListener("click", async () => {
-  await navigator.clipboard.writeText($("finalText").value);
-});
-
-$("downloadTxt").addEventListener("click", () => {
-  const blob = new Blob([$("finalText").value], {type:"text/plain"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "report.txt";
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
-
-/* Boot with the sample JSON so it works out of the box */
-(function init() {
-  $("useSample").click();         // load sample into textarea
-  $("applyJson").click();         // apply it to the editor
+// Boot
+(function init(){
+  for (let i=0;i<16;i++) rows.push(newRow(FRAGMENTS_ALL[i]));
+  buildTable(); recompute();
 })();
 </script>
 </body>
