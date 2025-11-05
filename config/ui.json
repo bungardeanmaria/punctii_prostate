@@ -1,0 +1,11 @@
+{
+  "columns": {
+    "X": { "label": "lungime fragment", "title": "lungime fragment (mm)" },
+    "Y": { "label": "lungime tumora",   "title": "lungime tumora (mm)" },
+    "Z": { "label": "% tumora",          "title": "% tumora" },
+    "A": { "label": "Gleason dominant",  "title": "Gleason dominant" },
+    "B": { "label": "% Gleason dom.",    "title": "% Gleason dominant" },
+    "C": { "label": "Gleason secundar",  "title": "Gleason secundar" },
+    "D": { "label": "% Gleason sec.",    "title": "% Gleason secundar" }
+  }
+}
