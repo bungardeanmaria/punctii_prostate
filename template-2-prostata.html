@@ -50,7 +50,7 @@
 <main>
   
     <div class="card">
-      <h2>2) Text rezultat</h2>
+      <h2>1) Text rezultat</h2>
       <p class="muted">Se regenerează automat. Variabila JS: <code>window.finalText</code>.</p>
       <textarea id="out"></textarea>
       <div class="inline" style="margin-top:8px;">
@@ -59,9 +59,20 @@
         <span id="charCount" class="badge">0 chars</span>
       </div>
     </div>
+    <div class="row">
+    <div class="card">
+      <h2>2) Import din text</h2>
+      <p class="muted">Lipește aici textul primit (format ca în textul generat). Vom detecta X / Y / A / B / C / D și completăm tabelul automat.</p>
+      <textarea id="importText" placeholder="Lipește textul aici..."></textarea>
+      <div class="inline" style="margin-top:8px;">
+        <button id="btnParse" type="button">Pre-umple tabelul</button>
+        <button id="btnClearImport" type="button" class="secondary">Golește</button>
+      </div>
+    </div>
+  </div>
   <div class="row">
     <div class="card">
-      <h2>1) Configurare & Fragmente</h2>
+      <h2>3) Configurare & Fragmente</h2>
 
       <div class="inline" style="gap:12px; margin-bottom:8px;">
         <label for="fragCount"><b>Număr fragmente</b></label>
@@ -320,6 +331,148 @@ C 61.9   M-8140/3`;
 
   return `${parts1}\n\n${parts2}\n\n${summary}`;
 }
+
+// Build a quick index: fragment name (lowercased) -> row index
+function buildNameIndex() {
+  const map = new Map();
+  rows.forEach((r, i) => map.set(r.name.toLowerCase(), i));
+  return map;
+}
+
+// Generate a regex fragment of all location tokens that appear in FRAGMENTS_ALL
+// e.g. "lateral baza|lateral mijloc|lateral varf|medial baza|..." for template-1,
+// or "... posterior|... mijlociu|... anterior" for template-2
+function allLocationAlternation() {
+  const set = new Set();
+  FRAGMENTS_ALL.forEach(n => {
+    const m = n.match(/: (.*)$/); // take the part after "lob (drept|stang): "
+    if (m) set.add(m[1].trim());  // e.g. "lateral baza"
+  });
+  return Array.from(set)
+    .sort((a,b)=>b.length-a.length)           // longest first, safer matching
+    .map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))
+    .join("|");
+}
+
+// Find a row index by side ("lob drept"/"lob stang") + location ("lateral baza", etc.)
+function findRowIndexBySideAndLoc(side, loc) {
+  const target = `${side}: ${loc}`.toLowerCase(); // exact name in FRAGMENTS_ALL
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].name.toLowerCase() === target) return i;
+  }
+  return -1;
+}
+
+// Parse text and fill table
+function parseAndFill(text) {
+  if (!text || !text.trim()) return;
+
+  // ensure we have 16 rows (or whatever user chose)
+  ensureRowCount(Math.min(MAX_FRAG, FRAGMENTS_ALL.length));
+  buildTable(); // to have fresh row DOM if count changed
+
+  const nameIdx = buildNameIndex();
+  const locAlt = allLocationAlternation();
+  const norm = text.replace(/\r/g,"");
+
+  // 1) X values from header lines like:
+  // "- lob drept: lateral baza - cu lungimea de 12 mm, lateral mijloc - 8 mm, ..."
+  // We'll capture side + each "location - cu lungimea de N mm"
+  const xHeaderRe = new RegExp(
+    `-\\s*(lob\\s+(drept|stang))\\s*:\\s*([\\s\\S]*?)(?:\\n|$)`,
+    "gi"
+  );
+  let m;
+  while ((m = xHeaderRe.exec(norm)) !== null) {
+    const side = m[1].toLowerCase().trim(); // "lob drept" or "lob stang"
+    const tail = m[3]; // the rest of the line with multiple "loc - cu lungimea de N mm"
+    const perLocRe = new RegExp(
+      `(?:^|,|;)\\s*(${locAlt})\\s*-\\s*(?:cu\\s+lungimea\\s+de\\s*)?(\\d+(?:[.,]\\d+)?)\\s*mm`,
+      "gi"
+    );
+    let s;
+    while ((s = perLocRe.exec(tail)) !== null) {
+      const loc = s[1].toLowerCase().trim();
+      const xVal = s[2].replace(",", ".");
+      const idx = findRowIndexBySideAndLoc(side, loc);
+      if (idx >= 0) { rows[idx].X = xVal; rows[idx].include = true; }
+    }
+  }
+
+  // 2) Nerves X from lines like "N1: 4 mm", "N2- 3 mm"
+  const nerveXRe = /(?:^|\n)\s*N([1-4])\s*[:\-]\s*(\d+(?:[.,]\d+)?)\s*mm/gi;
+  let nx;
+  while ((nx = nerveXRe.exec(norm)) !== null) {
+    const n = parseInt(nx[1],10); const val = nx[2].replace(",", ".");
+    const idx = 11 + n; // N1->12, etc. (0-based rows, N1 is index 12)
+    if (rows[idx]) { rows[idx].X = val; rows[idx].include = true; }
+  }
+
+  // 3) Infiltration sections: keep current side from lines "-  lob drept:" / "-  lob stang:"
+  let currentSide = null;
+  const lines = norm.split("\n");
+  const sideLineRe = /^\s*-\s*lob\s+(drept|stang)\s*:\s*$/i;
+  // Lines like: "lateral baza: pe o lungime de 5 mm (42%), cu pattern dominant Gleason 3 (70%) si pattern secundar Gleason 4 (30%),"
+  const infRe = new RegExp(
+    `^\\s*(${locAlt})\\s*:\\s*pe\\s+o\\s+lungime\\s+de\\s*(\\d+(?:[.,]\\d+)?)\\s*mm\\s*\\((\\d+)\\s*%\\)\\s*,\\s*cu\\s*pattern\\s*dominant\\s*Gleason\\s*(\\S+)\\s*\\((\\d+)\\s*%\\)\\s*si\\s*pattern\\s*secundar\\s*Gleason\\s*(\\S+)\\s*\\((\\d+)\\s*%\\)`,
+    "i"
+  );
+
+  for (const line of lines) {
+    const sm = sideLineRe.exec(line);
+    if (sm) { currentSide = `lob ${sm[1].toLowerCase()}`; continue; }
+
+    const im = infRe.exec(line);
+    if (im && currentSide) {
+      const loc = im[1].toLowerCase().trim();
+      const y = im[2].replace(",", ".");
+      const z = im[3];
+      const a = im[4];
+      const b = im[5];
+      const c = im[6];
+      const d = im[7];
+      const idx = findRowIndexBySideAndLoc(currentSide, loc);
+      if (idx >= 0) {
+        rows[idx].Y = y;
+        // Z will be recomputed from X & Y anyway, but if you want to display given Z until X arrives:
+        rows[idx].Z = Number(z);
+        rows[idx].A = a; rows[idx].B = b; rows[idx].C = c; rows[idx].D = d;
+        rows[idx].include = true;
+      }
+    }
+  }
+
+  // 4) Also support "N1: pe o lungime de Y mm (Z%), ..." infiltration lines for nerves:
+  const nerveInfRe = /^\s*N([1-4])\s*:\s*pe\s+o\s+lungime\s+de\s*(\d+(?:[.,]\d+)?)\s*mm\s*\((\d+)\s*%\)\s*,\s*cu\s*pattern\s*dominant\s*Gleason\s*(\S+)\\s*\\((\\d+)\\s*%\\)\\s*si\\s*pattern\\s*secundar\\s*Gleason\\s*(\\S+)\\s*\\((\\d+)\\s*%\\)\\.?$/i;
+  for (const line of lines) {
+    const nm = nerveInfRe.exec(line);
+    if (nm) {
+      const n = parseInt(nm[1],10);
+      const y = nm[2].replace(",", "."); const z = nm[3];
+      const a = nm[4]; const b = nm[5]; const c = nm[6]; const d = nm[7];
+      const idx = 11 + n;
+      if (rows[idx]) {
+        rows[idx].Y = y; rows[idx].Z = Number(z);
+        rows[idx].A = a; rows[idx].B = b; rows[idx].C = c; rows[idx].D = d;
+        rows[idx].include = true;
+      }
+    }
+  }
+
+  // push to UI and recompute
+  buildTable();
+  refreshAllDisabledStates && refreshAllDisabledStates(); // if you added disabled logic
+  recompute(true);
+}
+
+// Wire buttons
+document.getElementById("btnParse").addEventListener("click", ()=>{
+  const txt = document.getElementById("importText").value;
+  parseAndFill(txt);
+});
+document.getElementById("btnClearImport").addEventListener("click", ()=>{
+  document.getElementById("importText").value = "";
+});
 
 /* ---------- Events & init ---------- */
 function resetAllValues(){ rows.forEach(r=>{ r.X=""; r.Y=""; r.Z=0; r.A=""; r.B=""; r.C=""; r.D=""; r.include=true; }); buildTable(); recompute(); }
