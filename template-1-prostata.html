@@ -54,6 +54,18 @@
 <body>
 <header><h1>Template 1 – Fragmente prostatice (baza / mijloc / varf)</h1></header>
 <main>
+  <div class="row">
+    <div class="card">
+      <h2>2) Text rezultat</h2>
+      <p class="muted">Se regenerează automat. Variabila JS: <code>window.finalText</code>.</p>
+      <textarea id="out"></textarea>
+      <div class="inline" style="margin-top:8px;">
+        <button id="copy" type="button" class="secondary">Copiază</button>
+        <button id="download" type="button" class="secondary">Descarcă .txt</button>
+        <span id="charCount" class="badge">0 chars</span>
+      </div>
+    </div>
+  </div>
 
   <div class="row">
     <div class="card">
@@ -110,18 +122,6 @@
       <p class="muted" style="margin-top:8px;">
         Z = round(100 * Y / X). &nbsp;E=ΣY, F=ΣZ, G=ΣX, H=ΣB, I=ΣD (pe elementele bifate & grupuri incluse)
       </p>
-    </div>
-  </div>
-  <div class="row">
-    <div class="card">
-      <h2>2) Text rezultat</h2>
-      <p class="muted">Se regenerează automat. Variabila JS: <code>window.finalText</code>.</p>
-      <textarea id="out"></textarea>
-      <div class="inline" style="margin-top:8px;">
-        <button id="copy" type="button" class="secondary">Copiază</button>
-        <button id="download" type="button" class="secondary">Descarcă .txt</button>
-        <span id="charCount" class="badge">0 chars</span>
-      </div>
     </div>
   </div>
 
