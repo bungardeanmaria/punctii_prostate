@@ -26,108 +26,138 @@
   .table-wrap { overflow:auto; }
   table { width:100%; border-collapse:collapse; background:#fff; }
   th, td { border:1px solid var(--bd); padding:8px; text-align:left; vertical-align:middle; }
-  thead th { background:#f1f5f9; position:sticky; top:0; white-space:nowrap; } /* keep single row */
-  input[type="number"], input[type="text"] { width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:8px; }
+  thead th { background:#f1f5f9; position:sticky; top:0; white-space:normal; }
+  input[type="number"], input[type="text"], select { width:100%; box-sizing:border-box; padding:8px; border:1px solid #cbd5e1; border-radius:8px; }
   textarea { width:100%; min-height:260px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
              border:1px solid var(--bd); border-radius:10px; padding:10px; background:#fff; }
 
-  @media (max-width: 720px) {
-    table thead { display: none; }
-    table, tbody, tr, td { display: block; width: 100%; }
-    tr { border:1px solid var(--bd); border-radius:12px; padding:10px; margin-bottom:12px; background:#fff; }
-    td { border:none; border-bottom:1px dashed #e5e7eb; }
-    td:last-child { border-bottom:none; }
-    td[data-label]::before { content: attr(data-label); display:block; font-size:12px; color:#475569; margin-bottom:4px; }
-    .tfoot-row { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; }
-    .hide-on-mobile { display:none; }
+  /* Compact table layout */
+  .table-compact th, .table-compact td { padding:6px 6px; }
+  .th-2 {
+  display:inline-block;
+  line-height:1.15;
+  text-align:center;
+}
+  .table-compact td:nth-child(3) { white-space:normal; }
+  .table-compact th:not(:nth-child(3)),
+  .table-compact td:not(:nth-child(3)) { white-space:nowrap; }
+
+  .table-compact input[type="number"],
+  .table-compact input[type="text"],
+  .table-compact select { padding:6px 8px; height:32px; font-size:13px; }
+
+  td.opt { width:160px; }
+  .opt-wrap { display:grid; gap:6px; }
+  .opt-select { width:100%; min-width:90px; }
+  .opt-tags { display:grid; grid-template-columns: repeat(2, auto); gap:4px 10px; align-items:center; }
+  .opt-tags label { font-size:12px; line-height:1; white-space:nowrap; }
+
+  @media (max-width:1100px){
+    td.opt { width:130px; }
+    .opt-tags { grid-template-columns:1fr 1fr; }
+    .table-compact input[type="number"],
+    .table-compact input[type="text"],
+    .table-compact select { height:30px; font-size:12px; }
   }
+
+  /* Disabled rows */
   tr.is-disabled { opacity:.6; }
-  tr.is-disabled input { background:#f8fafc; color:#64748b; }
+  tr.is-disabled input, tr.is-disabled select { background:#f8fafc; color:#64748b; }
 </style>
 </head>
 <body>
 <header><h1>Template 2 – Fragmente prostatice (posterior / mijlociu / anterior)</h1></header>
 <main>
-  
-    <div class="card">
-      <h2>1) Text rezultat</h2>
-      <p class="muted">Se regenerează automat. Variabila JS: <code>window.finalText</code>.</p>
-      <textarea id="out"></textarea>
-      <div class="inline" style="margin-top:8px;">
-        <button id="copy" type="button" class="secondary">Copiază</button>
-        <button id="download" type="button" class="secondary">Descarcă .txt</button>
-        <span id="charCount" class="badge">0 chars</span>
-      </div>
-    </div>
-    <div class="row">
-    <div class="card">
-      <h2>2) Import din text</h2>
-      <p class="muted">Lipește aici textul primit (format ca în textul generat). Vom detecta X / Y / A / B / C / D și completăm tabelul automat.</p>
-      <textarea id="importText" placeholder="Lipește textul aici..."></textarea>
-      <div class="inline" style="margin-top:8px;">
-        <button id="btnParse" type="button">Pre-umple tabelul</button>
-        <button id="btnClearImport" type="button" class="secondary">Golește</button>
-      </div>
+
+  <!-- Rezultat -->
+  <div class="card">
+    <h2>1) Text rezultat</h2>
+    <p class="muted">Se regenerează automat când editezi tabelul. Variabila JS: <code>window.finalText</code>.</p>
+    <textarea id="out"></textarea>
+    <div class="inline" style="margin-top:8px;">
+      <button id="copy" type="button" class="secondary">Copiază</button>
+      <button id="download" type="button" class="secondary">Descarcă .txt</button>
+      <span id="charCount" class="badge">0 chars</span>
     </div>
   </div>
-  <div class="row">
-    <div class="card">
-      <h2>3) Configurare & Fragmente</h2>
 
-      <div class="inline" style="gap:12px; margin-bottom:8px;">
-        <label for="fragCount"><b>Număr fragmente</b></label>
-        <input id="fragCount" type="number" min="1" max="16" value="16" style="width:110px" />
-        <button id="applyCount" class="secondary" type="button">Aplică</button>
-        <button id="addOne" class="secondary" type="button">+1</button>
-        <button id="removeOne" class="secondary" type="button">-1</button>
-        <span id="totalBadge" class="badge">Total: 16</span>
-        <button id="clearAll" class="secondary" type="button">Golește toate câmpurile</button>
-      </div>
+  <!-- Parenchim netumoral -->
+  <div class="card">
+    <h2>Parenchim netumoral</h2>
+    <p class="muted">Bifează modificările care să apară în text.</p>
+    <div id="parenchimWrap" class="inline" style="gap:12px;">
+      <label><input type="checkbox" data-par="hgm"> hiperplazie glandulara multifocala</label>
+      <label><input type="checkbox" data-par="atrof"> glande atrofice</label>
+      <label><input type="checkbox" data-par="bazal"> hiperplazie de strat bazal</label>
+      <label><input type="checkbox" data-par="inf_redus"> redus infiltrat inflamator limfocitar in stroma</label>
+      <label><input type="checkbox" data-par="inf_mod"> moderat infiltrat inflamator limfocitar in stroma</label>
+      <label><input type="checkbox" data-par="mix_mod"> moderat infiltrat inflamator mixt in stroma si intraacinar</label>
+    </div>
+  </div>
 
-      <div class="inline" style="gap:12px; margin-bottom:8px;">
-        <label class="inline"><input type="checkbox" id="incRight" checked> Include lob drept</label>
-        <label class="inline"><input type="checkbox" id="incLeft" checked> Include lob stang</label>
-        <label class="inline"><input type="checkbox" id="incNerves" checked> Include N1–N4</label>
-      </div>
+  <!-- Configurare & Fragmente -->
+  <div class="card">
+    <h2>3) Configurare & Fragmente</h2>
 
-      <div class="table-wrap">
-        <table id="tbl">
-          <thead>
-            <tr>
-              <th class="hide-on-mobile">✔</th>
-              <th class="hide-on-mobile">#</th>
-              <th>Nume fragment</th>
-              <th id="colX"></th>
-              <th id="colY"></th>
-              <th id="colZ"></th>
-              <th id="colA"></th>
-              <th id="colB"></th>
-              <th id="colC"></th>
-              <th id="colD"></th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-          <tfoot>
-            <tr class="tfoot-row">
-              <th colspan="3" class="right">Totaluri (bifate & grupuri selectate):</th>
-              <th id="sumX">0</th>
-              <th id="sumY">0</th>
-              <th id="sumZ">0</th>
-              <th class="right">—</th>
-              <th id="sumB">0</th>
-              <th class="right">—</th>
-              <th id="sumD">0</th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <p class="muted" style="margin-top:8px;">
-        Z = round(100 * Y / X). &nbsp;E=ΣY, F=ΣZ, G=ΣX, H=ΣB, I=ΣD (pe elementele bifate & grupuri incluse)
-      </p>
+    <div class="inline" style="gap:12px; margin-bottom:8px;">
+      <label for="fragCount"><b>Număr fragmente</b></label>
+      <input id="fragCount" type="number" min="1" max="16" value="16" style="width:110px" />
+      <button id="applyCount" class="secondary" type="button">Aplică</button>
+      <button id="addOne" class="secondary" type="button">+1</button>
+      <button id="removeOne" class="secondary" type="button">-1</button>
+      <span id="totalBadge" class="badge">Total: 16</span>
+      <button id="clearAll" class="secondary" type="button">Golește toate câmpurile</button>
     </div>
 
+    <div class="inline" style="gap:12px; margin-bottom:8px;">
+      <label class="inline"><input type="checkbox" id="incRight" checked> Include lob drept</label>
+      <label class="inline"><input type="checkbox" id="incLeft" checked> Include lob stang</label>
+      <label class="inline"><input type="checkbox" id="incNerves" checked> Include N1–N4</label>
     </div>
+
+    <div class="table-wrap">
+      <table id="tbl" class="table-compact">
+        <thead>
+          <tr>
+            <th class="hide-on-mobile">✔</th>
+            <th class="hide-on-mobile">#</th>
+            <th>Nume fragment</th>
+            <th id="colX"></th>
+            <th id="colY"></th>
+            <th id="colZ"></th>
+            <th id="colA"></th>
+            <th id="colB"></th>
+            <th id="colC"></th>
+            <th id="colD"></th>
+            <th class="opt">Opt</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot>
+          <tr class="tfoot-row">
+            <th colspan="3" class="right">Totaluri (bifate & grupuri selectate):</th>
+            <th id="sumX" title="G = ΣX">0</th>
+            <th id="sumY" title="E = ΣY (mm infiltrați)">0</th>
+            <th id="sumZ" title="F = round(100 × E / G)">0</th>
+            <th class="right">—</th>
+            <th id="sumB" title="H = total % Gleason 3 (din B/D unde A/C = 3)">0</th>
+            <th class="right">—</th>
+            <th id="sumD" title="I = total % Gleason 4 (din B/D unde A/C = 4)">0</th>
+            <th class="right">—</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <p class="muted" style="margin-top:8px;">
+      Introduci: <b>X</b>, <b>Y</b>, <b>A</b>, <b>B</b>, <b>C</b>, <b>D</b>.<br/>
+      Se calculează: <b>Z</b>, <b>E</b>, <b>F</b>, <b>H</b>, <b>I</b>.<br/>
+      Z (pe rând) = round(100 × Y / X). &nbsp;
+      E = ΣY, G = ΣX, &nbsp; <b>F = round(100 × E / G)</b> (procent mm infiltrați din total mm fragmente).<br>
+      <b>H</b> = total % Gleason 3 (din B/D unde A/C = 3), &nbsp;
+      <b>I</b> = total % Gleason 4 (din B/D unde A/C = 4).
+    </p>
+  </div>
 
 </main>
 
@@ -167,6 +197,17 @@ const RIGHT_LOCATIONS = ["lateral posterior","lateral mijlociu","lateral anterio
 const LEFT_LOCATIONS  = ["lateral posterior","lateral mijlociu","lateral anterior","medial posterior","medial mijlociu","medial anterior"];
 const MAX_FRAG=16;
 
+/* ---------- Parenchim state ---------- */
+const PARENCHIM = {
+  hgm:       "hiperplazie glandulara multifocala",
+  atrof:     "glande atrofice",
+  bazal:     "hiperplazie de strat bazal",
+  inf_redus: "redus infiltrat inflamator limfocitar in stroma",
+  inf_mod:   "moderat infiltrat inflamator limfocitar in stroma",
+  mix_mod:   "moderat infiltrat inflamator mixt in stroma si intraacinar"
+};
+let parenchimSel = { hgm:false, atrof:false, bazal:false, inf_redus:false, inf_mod:false, mix_mod:false };
+
 /* ---------- State & DOM ---------- */
 let rows=[]; let fragCount=16; let includeRight=true, includeLeft=true, includeNerves=true;
 const $=(id)=>document.getElementById(id);
@@ -175,7 +216,13 @@ const sumX=$("sumX"), sumY=$("sumY"), sumZ=$("sumZ"), sumB=$("sumB"), sumD=$("su
 const out=$("out"), charCount=$("charCount"), totalBadge=$("totalBadge");
 
 /* ---------- Helpers ---------- */
-function newRow(name){ return {name, include:true, X:"", Y:"", Z:0, A:"", B:"", C:"", D:""}; }
+function newRow(name){
+  return {
+    name, include:true, X:"", Y:"", Z:0, A:"", B:"", C:"", D:"",
+    preset:"", // "", "g3g3", "g4g4"
+    tags:{ hgpin:false, hgpin_cid:false, intrad:false, pni:false }
+  };
+}
 function ensureRowCount(n){
   n=Math.max(1,Math.min(MAX_FRAG,n));
   while(rows.length<n) rows.push(newRow(FRAGMENTS_ALL[rows.length]));
@@ -184,40 +231,28 @@ function ensureRowCount(n){
 }
 function groupEnabled(i){ if(i<6) return includeRight; if(i<12) return includeLeft; return includeNerves; }
 function includedIndices(){ return rows.map((r,i)=>({i,ok:r.include&&groupEnabled(i)})).filter(x=>x.ok).map(x=>x.i); }
-
-/* ---------- Table ---------- */
 function td(label,node){ const el=document.createElement("td"); el.dataset.label=label; if(node instanceof Node) el.appendChild(node); else el.textContent=node; return el; }
 function setRowDisabled(tr, disabled) {
-  const inputs = tr.querySelectorAll('input[type="number"], input[type="text"]');
+  const inputs = tr.querySelectorAll('input[type="number"], input[type="text"], select');
   inputs.forEach(el => { el.disabled = disabled; if (disabled) el.blur(); });
   tr.classList.toggle('is-disabled', disabled);
 }
-
-function effectiveIncluded(i) {
-  // row is editable only if row checkbox is checked AND its group is enabled
-  return rows[i].include && groupEnabled(i);
-}
-
-function refreshAllDisabledStates() {
+function effectiveIncluded(i){ return rows[i].include && groupEnabled(i); }
+function refreshAllDisabledStates(){
   const trs = tbody.querySelectorAll('tr');
-  trs.forEach((tr, i) => {
-    setRowDisabled(tr, !effectiveIncluded(i));
-  });
+  trs.forEach((tr, i) => setRowDisabled(tr, !effectiveIncluded(i)));
 }
+
+/* ---------- Table ---------- */
 function buildTable(){
   tbody.innerHTML = "";
   rows.forEach((r,i)=>{
     const tr = document.createElement("tr");
 
-    // row checkbox
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.checked = r.include;
-    cb.addEventListener("change", ()=>{
-      r.include = cb.checked;
-      setRowDisabled(tr, !effectiveIncluded(i)); // <-- toggle disabled based on row+group
-      recompute();
-    });
+    cb.addEventListener("change", ()=>{ r.include = cb.checked; setRowDisabled(tr, !effectiveIncluded(i)); recompute(); });
     tr.appendChild(td("✔", cb));
 
     tr.appendChild(td("#", i+1));
@@ -250,79 +285,211 @@ function buildTable(){
     inD.addEventListener("input", ()=>{ r.D=inD.value; recompute(false); });
     tr.appendChild(td(UI.columns.D.label, inD));
 
-    // initial disabled state (row + group)
-    setRowDisabled(tr, !effectiveIncluded(i));
+    // Opt: preset + fraze frecvente
+    const wrap = document.createElement("div"); wrap.className = "opt-wrap";
+    const sel = document.createElement("select"); sel.className="opt-select";
+    [["","-"],["g3g3","G3+G3"],["g4g4","G4+G4"]].forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; sel.appendChild(o); });
+    sel.value = r.preset || "";
+    sel.title = "Preset Gleason";
+    sel.addEventListener("change", ()=>{ r.preset=sel.value; recompute(false); });
+    wrap.appendChild(sel);
 
+    const tagsRow=document.createElement("div"); tagsRow.className="opt-tags";
+    const mkChk = (key, label, title) => {
+      const lab=document.createElement("label"); lab.style.display="inline-flex"; lab.style.alignItems="center"; lab.style.gap="6px";
+      const c=document.createElement("input"); c.type="checkbox"; c.checked=!!r.tags[key];
+      c.addEventListener("change", ()=>{ r.tags[key]=c.checked; recompute(false); });
+      c.title = title || label;
+      lab.appendChild(c);
+      const span=document.createElement("span"); span.textContent=label; span.title = title || label;
+      lab.appendChild(span);
+      return lab;
+    };
+    tagsRow.appendChild(mkChk("hgpin",     "HGPIN",     "Asociaza HGPIN."));
+    tagsRow.appendChild(mkChk("hgpin_cid", "HGPIN+CID", "Asociaza HGPIN si carcinom intraductal."));
+    tagsRow.appendChild(mkChk("intrad",    "Intrad.",   "cu componenta intraductala."));
+    tagsRow.appendChild(mkChk("pni",       "PNI",       "Asociaza infiltrare perineurala."));
+    wrap.appendChild(tagsRow);
+
+    const optTd = td("Opt", wrap); optTd.className="opt";
+    tr.appendChild(optTd);
+
+    setRowDisabled(tr, !effectiveIncluded(i));
     tbody.appendChild(tr);
   });
 }
 
 /* ---------- Compute & text ---------- */
 function recompute(updateZCells=true){
-  rows.forEach(r=>{ const X=Number(r.X), Y=Number(r.Y); r.Z=(isFinite(X)&&X>0&&isFinite(Y)&&Y>=0)?Math.round((Y/X)*100):0; });
+  // per-row Z
+  rows.forEach(r=>{
+    const X=Number(r.X), Y=Number(r.Y);
+    r.Z=(isFinite(X)&&X>0&&isFinite(Y)&&Y>=0)?Math.round((Y/X)*100):0;
+  });
   const idxs=includedIndices();
-  const E=idxs.reduce((s,i)=>s+(+rows[i].Y||0),0);
-  const F=idxs.reduce((s,i)=>s+(+rows[i].Z||0),0);
-  const G=idxs.reduce((s,i)=>s+(+rows[i].X||0),0);
-  const H=idxs.reduce((s,i)=>s+(+rows[i].B||0),0);
-  const I=idxs.reduce((s,i)=>s+(+rows[i].D||0),0);
 
-  sumX.textContent=G; sumY.textContent=E; sumZ.textContent=F; sumB.textContent=H; sumD.textContent=I;
+  // E, G, F
+  const E = idxs.reduce((s,i)=> s + ((+rows[i].Y||0) > 0 ? (+rows[i].Y||0) : 0), 0);
+  const G = idxs.reduce((s,i)=> s + (+rows[i].X||0), 0);
+  const F = (isFinite(E) && isFinite(G) && G>0) ? Math.round((E/G)*100) : 0;
+
+  // H (Gleason 3), I (Gleason 4) din B/D unde A/C = 3 sau 4
+  const totalG3 = idxs.reduce((s,i)=>{
+    const r=rows[i];
+    const addDom = (String(r.A).trim()==="3") ? (+r.B||0) : 0;
+    const addSec = (String(r.C).trim()==="3") ? (+r.D||0) : 0;
+    return s + addDom + addSec;
+  },0);
+  const totalG4 = idxs.reduce((s,i)=>{
+    const r=rows[i];
+    const addDom = (String(r.A).trim()==="4") ? (+r.B||0) : 0;
+    const addSec = (String(r.C).trim()==="4") ? (+r.D||0) : 0;
+    return s + addDom + addSec;
+  },0);
+
+  // update sums
+  sumX.textContent=G; // G
+  sumY.textContent=E; // E
+  sumZ.textContent=F; // F (procent)
+  sumB.textContent=totalG3; // H
+  sumD.textContent=totalG4; // I
+
   if(updateZCells){ [...tbody.querySelectorAll(".zcell")].forEach((c,idx)=>{ c.textContent = rows[idx].Z || 0; }); }
 
-  window.finalText = buildReportText(E,F,G,H,I);
+  // counts
+  const positiveCount = idxs.filter(i => (+rows[i].Y||0) > 0).length;
+  const totalCount    = idxs.length;
+
+  window.finalText = buildReportText(E,F,G,totalG3,totalG4,positiveCount,totalCount);
   out.value = window.finalText;
   charCount.textContent = `${window.finalText.length} chars`;
 }
+
 function rowIncluded(i){ return rows[i] && rows[i].include && groupEnabled(i); }
+
 function fragmentLineForX(prefix,start,locs,ok){
   if(!ok) return null;
   const parts=locs.map((loc,k)=>{ const idx=start+k; if(idx>=rows.length||!rowIncluded(idx)) return null; const x=rows[idx].X||"x"; return `${loc} - cu lungimea de ${x} mm`; }).filter(Boolean);
   return parts.length?`- ${prefix}: ${parts.join(", ")};`:null;
 }
+
+// ascund linia dacă Y lipsește; ascund parantezele de % dacă lipsesc; preset-urile înlocuiesc fraza Gleason; adaug tag-urile la final
 function fragmentInfiltrationLines(prefix,start,locs,ok){
   if(!ok) return null;
-  const lines=locs.map((loc,k)=>{ const idx=start+k; if(idx>=rows.length||!rowIncluded(idx)) return null;
-    const r=rows[idx]; const y=r.Y||"y", z=(r.Z??"z"), a=r.A||"a", b=r.B||"b", c=r.C||"c", d=r.D||"d";
-    return `\t${loc}: pe o lungime de ${y} mm (${z}%), cu pattern dominant Gleason ${a} (${b}%) si pattern secundar Gleason ${c} (${d}%),`;
+  const lines=locs.map((loc,k)=>{
+    const idx=start+k;
+    if(idx>=rows.length || !rowIncluded(idx)) return null;
+    const r=rows[idx];
+
+    if(r.Y==="" || r.Y===null) return null;
+
+    let gleasonPart="";
+    if(r.preset==="g3g3"){
+      gleasonPart = "cu pattern dominant si secundar Gleason 3";
+    }else if(r.preset==="g4g4"){
+      gleasonPart = "cu pattern dominant si secundar Gleason 4";
+    }else{
+      const a = r.A || "";
+      const b = (r.B!=="" && r.B!=null) ? ` (${r.B}%)` : "";
+      const c = r.C || "";
+      const d = (r.D!=="" && r.D!=null) ? ` (${r.D}%)` : "";
+      if(a || c){
+        gleasonPart = `cu pattern dominant Gleason ${a}${b} si pattern secundar Gleason ${c}${d}`;
+      }
+    }
+
+    const extra=[];
+    if(r.tags.hgpin)     extra.push("Asociaza HGPIN.");
+    if(r.tags.hgpin_cid) extra.push("Asociaza HGPIN si carcinom intraductal.");
+    if(r.tags.intrad)    extra.push(", cu componenta intraductala.");
+    if(r.tags.pni)       extra.push("Asociaza infiltrare perineurala.");
+
+    const base = `${loc}: pe o lungime de ${r.Y} mm ${r.Z?`(${r.Z}%)`:``}${gleasonPart?`, ${gleasonPart}`:""}`;
+    const sentence = base + ".";
+    return [sentence, ...extra].join(" ");
   }).filter(Boolean);
   return lines.length?`-  ${prefix}:\n`+lines.join("\n"):null;
 }
-function nervesXLine(ok){
-  if(!ok) return null;
-  const parts=[]; for(let i=12;i<16&&i<rows.length;i++){ if(!rowIncluded(i)) continue; parts.push(`N${i-11}- ${rows[i].X||"x"} mm`); }
-  return parts.length?parts.join(", ")+".":null;
-}
+
+// N1–N3 se termină cu virgulă, N4 cu punct
 function nervesInfiltrationLines(ok){
   if(!ok) return null;
-  const lines=[]; for(let i=12;i<16&&i<rows.length;i++){ if(!rowIncluded(i)) continue;
-    const r=rows[i]; const y=r.Y||"y", z=(r.Z??"z"), a=r.A||"a", b=r.B||"b", c=r.C||"c", d=r.D||"d";
-    lines.push(`\tN${i-11}: pe o lungime de ${y} mm (${z}%), cu pattern dominant Gleason ${a} (${b}%) si pattern secundar Gleason ${c} (${d}%).`);
+  const lines=[];
+  for(let i=12;i<16&&i<rows.length;i++){
+    if(!rowIncluded(i)) continue;
+    const r=rows[i];
+    if(r.Y==="" || r.Y===null) continue;
+
+    let gleasonPart="";
+    if(r.preset==="g3g3"){
+      gleasonPart = "cu pattern dominant si secundar Gleason 3";
+    }else if(r.preset==="g4g4"){
+      gleasonPart = "cu pattern dominant si secundar Gleason 4";
+    }else{
+      const a=r.A||""; const b=(r.B!=="" && r.B!=null)?` (${r.B}%)`:"";
+      const c=r.C||""; const d=(r.D!=="" && r.D!=null)?` (${r.D}%)`:"";
+      if(a || c){ gleasonPart = `cu pattern dominant Gleason ${a}${b} si pattern secundar Gleason ${c}${d}`; }
+    }
+
+    const extra=[];
+    if(r.tags.hgpin)     extra.push("Asociaza HGPIN.");
+    if(r.tags.hgpin_cid) extra.push("Asociaza HGPIN si carcinom intraductal.");
+    if(r.tags.intrad)    extra.push(", cu componenta intraductala.");
+    if(r.tags.pni)       extra.push("Asociaza infiltrare perineurala.");
+
+    const nLabel = `N${i-11}`;
+    const base = `${nLabel}: pe o lungime de ${r.Y} mm ${r.Z?`(${r.Z}%)`:``}${gleasonPart?`, ${gleasonPart}`:""}`;
+    const end = (nLabel==="N4") ? "." : ",";
+    lines.push([base+end, ...extra].join(" "));
   }
   return lines.join("\n");
 }
-function buildReportText(E,F,G,H,I){
+
+function nervesXLine(ok){
+  if(!ok) return null;
+  const parts=[]; for(let i=12;i<16&&i<rows.length;i++){ if(!rowIncluded(i)) continue; parts.push(`N${i-11}: ${rows[i].X||"x"} mm`); }
+  return parts.length?parts.join(", ")+".":null;
+}
+
+function buildParenchimText(){
+  const picked = Object.keys(parenchimSel).filter(k => parenchimSel[k]).map(k => PARENCHIM[k]);
+  if(!picked.length) return "Parenchimul prostatic netumoral prezinta aspecte fara particularitati notabile.";
+  return "Parenchimul prostatic netumoral prezinta " + picked.join(", ") + ".";
+}
+
+function buildReportText(E,F,G,totalG3,totalG4,positiveCount,totalCount){
   const N=includedIndices().length;
   const rightX=fragmentLineForX("lob drept",0,RIGHT_LOCATIONS,includeRight);
   const leftX =fragmentLineForX("lob stang",6,LEFT_LOCATIONS,includeLeft);
   const nervesX=nervesXLine(includeNerves);
 
   const parts1=[`Materialul examinat este alcatuit din ${N} fragmente prostatice biopunctate astfel:`, rightX, leftX, nervesX?`\n      ${nervesX}`:null].filter(Boolean).join("\n");
+
   const rightInf=fragmentInfiltrationLines("lob drept",0,RIGHT_LOCATIONS,includeRight);
   const leftInf =fragmentInfiltrationLines("lob stang",6,LEFT_LOCATIONS,includeLeft);
   const nervesInf=nervesInfiltrationLines(includeNerves);
-
   const parts2=[`Sunt infiltrate de un adenocarcinom prostatic acinar astfel:`, rightInf, "", leftInf, "", nervesInf].filter(v=>v!==null).join("\n");
 
+  const anyPNI = rows.some((r,i) => r.include && groupEnabled(i) && r.tags && r.tags.pni);
+
+  const fragInfo = `${positiveCount} fragmente pozitive din totalul de ${totalCount}.`;
+  const negativeBits = [
+    "extensie extraprostatica",
+    anyPNI ? null : "infiltrare perineurala",
+    "invazie angiolimfatica"
+  ].filter(Boolean).join(", ");
+
+  const parenchimText = buildParenchimText();
+
   const summary =
-`Sunt infiltrati in total ${E} mm (${F}%), din cei ${G} mm ai fragmentelor prelevate,  fragmente pozitive din totalul de .       
+`Sunt infiltrati in total ${E} mm (${F}%), din cei ${G} mm ai fragmentelor prelevate, ${fragInfo}
 
-Nu se identifica aspecte de extensie extraprostatica, infiltrare perineurala sau invazie angiolimfatica (in aceste sectiuni).
+Nu se identifica aspecte de ${negativeBits} (in aceste sectiuni).
 
-Prezinta hiperplazie glandulara multifocala, glande atrofice si un moderat infiltrat inflamator limfocitar in stroma cu abcese glandulare focale.
+${parenchimText}
 
-Total procent pattern dominant: ${H}
-Total procent pattern secundar: ${I}
+Total procent Gleason 3: ${totalG3}
+Total procent Gleason 4: ${totalG4}
 
 Diagnostic: 
 Adenocarcinom prostatic acinar scor Gleason  (+), grupa de gradare  (ISUP/OMS 2022).
@@ -332,172 +499,39 @@ C 61.9   M-8140/3`;
   return `${parts1}\n\n${parts2}\n\n${summary}`;
 }
 
-// Build a quick index: fragment name (lowercased) -> row index
-function buildNameIndex() {
-  const map = new Map();
-  rows.forEach((r, i) => map.set(r.name.toLowerCase(), i));
-  return map;
-}
-
-// Generate a regex fragment of all location tokens that appear in FRAGMENTS_ALL
-// e.g. "lateral baza|lateral mijloc|lateral varf|medial baza|..." for template-1,
-// or "... posterior|... mijlociu|... anterior" for template-2
-function allLocationAlternation() {
-  const set = new Set();
-  FRAGMENTS_ALL.forEach(n => {
-    const m = n.match(/: (.*)$/); // take the part after "lob (drept|stang): "
-    if (m) set.add(m[1].trim());  // e.g. "lateral baza"
+/* ---------- Wire UI ---------- */
+function resetAllValues(){
+  rows.forEach(r=>{
+    r.X=""; r.Y=""; r.Z=0; r.A=""; r.B=""; r.C=""; r.D="";
+    r.preset=""; r.tags={hgpin:false,hgpin_cid:false,intrad:false,pni:false};
+    r.include=true;
   });
-  return Array.from(set)
-    .sort((a,b)=>b.length-a.length)           // longest first, safer matching
-    .map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))
-    .join("|");
+  buildTable(); recompute();
 }
-
-// Find a row index by side ("lob drept"/"lob stang") + location ("lateral baza", etc.)
-function findRowIndexBySideAndLoc(side, loc) {
-  const target = `${side}: ${loc}`.toLowerCase(); // exact name in FRAGMENTS_ALL
-  for (let i = 0; i < rows.length; i++) {
-    if (rows[i].name.toLowerCase() === target) return i;
-  }
-  return -1;
-}
-
-// Parse text and fill table
-function parseAndFill(text) {
-  if (!text || !text.trim()) return;
-
-  // ensure we have 16 rows (or whatever user chose)
-  ensureRowCount(Math.min(MAX_FRAG, FRAGMENTS_ALL.length));
-  buildTable(); // to have fresh row DOM if count changed
-
-  const nameIdx = buildNameIndex();
-  const locAlt = allLocationAlternation();
-  const norm = text.replace(/\r/g,"");
-
-  // 1) X values from header lines like:
-  // "- lob drept: lateral baza - cu lungimea de 12 mm, lateral mijloc - 8 mm, ..."
-  // We'll capture side + each "location - cu lungimea de N mm"
-  const xHeaderRe = new RegExp(
-    `-\\s*(lob\\s+(drept|stang))\\s*:\\s*([\\s\\S]*?)(?:\\n|$)`,
-    "gi"
-  );
-  let m;
-  while ((m = xHeaderRe.exec(norm)) !== null) {
-    const side = m[1].toLowerCase().trim(); // "lob drept" or "lob stang"
-    const tail = m[3]; // the rest of the line with multiple "loc - cu lungimea de N mm"
-    const perLocRe = new RegExp(
-      `(?:^|,|;)\\s*(${locAlt})\\s*-\\s*(?:cu\\s+lungimea\\s+de\\s*)?(\\d+(?:[.,]\\d+)?)\\s*mm`,
-      "gi"
-    );
-    let s;
-    while ((s = perLocRe.exec(tail)) !== null) {
-      const loc = s[1].toLowerCase().trim();
-      const xVal = s[2].replace(",", ".");
-      const idx = findRowIndexBySideAndLoc(side, loc);
-      if (idx >= 0) { rows[idx].X = xVal; rows[idx].include = true; }
-    }
-  }
-
-  // 2) Nerves X from lines like "N1: 4 mm", "N2- 3 mm"
-  const nerveXRe = /(?:^|\n)\s*N([1-4])\s*[:\-]\s*(\d+(?:[.,]\d+)?)\s*mm/gi;
-  let nx;
-  while ((nx = nerveXRe.exec(norm)) !== null) {
-    const n = parseInt(nx[1],10); const val = nx[2].replace(",", ".");
-    const idx = 11 + n; // N1->12, etc. (0-based rows, N1 is index 12)
-    if (rows[idx]) { rows[idx].X = val; rows[idx].include = true; }
-  }
-
-  // 3) Infiltration sections: keep current side from lines "-  lob drept:" / "-  lob stang:"
-  let currentSide = null;
-  const lines = norm.split("\n");
-  const sideLineRe = /^\s*-\s*lob\s+(drept|stang)\s*:\s*$/i;
-  // Lines like: "lateral baza: pe o lungime de 5 mm (42%), cu pattern dominant Gleason 3 (70%) si pattern secundar Gleason 4 (30%),"
-  const infRe = new RegExp(
-    `^\\s*(${locAlt})\\s*:\\s*pe\\s+o\\s+lungime\\s+de\\s*(\\d+(?:[.,]\\d+)?)\\s*mm\\s*\\((\\d+)\\s*%\\)\\s*,\\s*cu\\s*pattern\\s*dominant\\s*Gleason\\s*(\\S+)\\s*\\((\\d+)\\s*%\\)\\s*si\\s*pattern\\s*secundar\\s*Gleason\\s*(\\S+)\\s*\\((\\d+)\\s*%\\)`,
-    "i"
-  );
-
-  for (const line of lines) {
-    const sm = sideLineRe.exec(line);
-    if (sm) { currentSide = `lob ${sm[1].toLowerCase()}`; continue; }
-
-    const im = infRe.exec(line);
-    if (im && currentSide) {
-      const loc = im[1].toLowerCase().trim();
-      const y = im[2].replace(",", ".");
-      const z = im[3];
-      const a = im[4];
-      const b = im[5];
-      const c = im[6];
-      const d = im[7];
-      const idx = findRowIndexBySideAndLoc(currentSide, loc);
-      if (idx >= 0) {
-        rows[idx].Y = y;
-        // Z will be recomputed from X & Y anyway, but if you want to display given Z until X arrives:
-        rows[idx].Z = Number(z);
-        rows[idx].A = a; rows[idx].B = b; rows[idx].C = c; rows[idx].D = d;
-        rows[idx].include = true;
-      }
-    }
-  }
-
-  // 4) Also support "N1: pe o lungime de Y mm (Z%), ..." infiltration lines for nerves:
-  const nerveInfRe = /^\s*N([1-4])\s*:\s*pe\s+o\s+lungime\s+de\s*(\d+(?:[.,]\d+)?)\s*mm\s*\((\d+)\s*%\)\s*,\s*cu\s*pattern\s*dominant\s*Gleason\s*(\S+)\\s*\\((\\d+)\\s*%\\)\\s*si\\s*pattern\\s*secundar\\s*Gleason\\s*(\\S+)\\s*\\((\\d+)\\s*%\\)\\.?$/i;
-  for (const line of lines) {
-    const nm = nerveInfRe.exec(line);
-    if (nm) {
-      const n = parseInt(nm[1],10);
-      const y = nm[2].replace(",", "."); const z = nm[3];
-      const a = nm[4]; const b = nm[5]; const c = nm[6]; const d = nm[7];
-      const idx = 11 + n;
-      if (rows[idx]) {
-        rows[idx].Y = y; rows[idx].Z = Number(z);
-        rows[idx].A = a; rows[idx].B = b; rows[idx].C = c; rows[idx].D = d;
-        rows[idx].include = true;
-      }
-    }
-  }
-
-  // push to UI and recompute
-  buildTable();
-  refreshAllDisabledStates && refreshAllDisabledStates(); // if you added disabled logic
-  recompute(true);
-}
-
-// Wire buttons
-document.getElementById("btnParse").addEventListener("click", ()=>{
-  const txt = document.getElementById("importText").value;
-  parseAndFill(txt);
-});
-document.getElementById("btnClearImport").addEventListener("click", ()=>{
-  document.getElementById("importText").value = "";
-});
-
-/* ---------- Events & init ---------- */
-function resetAllValues(){ rows.forEach(r=>{ r.X=""; r.Y=""; r.Z=0; r.A=""; r.B=""; r.C=""; r.D=""; r.include=true; }); buildTable(); recompute(); }
 $("applyCount").addEventListener("click",()=>{ const v=+$("fragCount").value; ensureRowCount(isFinite(v)?v:fragCount); buildTable(); recompute(); });
 $("addOne").addEventListener("click",()=>{ ensureRowCount(fragCount+1); buildTable(); recompute(); });
 $("removeOne").addEventListener("click",()=>{ ensureRowCount(fragCount-1); buildTable(); recompute(); });
 $("clearAll").addEventListener("click", resetAllValues);
-$("incRight").addEventListener("change", e => {
-  includeRight = e.target.checked;
-  refreshAllDisabledStates();  // NEW
-  recompute();
-});
-$("incLeft").addEventListener("change", e => {
-  includeLeft = e.target.checked;
-  refreshAllDisabledStates();  // NEW
-  recompute();
-});
-$("incNerves").addEventListener("change", e => {
-  includeNerves = e.target.checked;
-  refreshAllDisabledStates();  // NEW
-  recompute();
-});
+$("incRight").addEventListener("change", e => { includeRight = e.target.checked; refreshAllDisabledStates(); recompute(); });
+$("incLeft").addEventListener("change",  e => { includeLeft  = e.target.checked; refreshAllDisabledStates(); recompute(); });
+$("incNerves").addEventListener("change",e => { includeNerves= e.target.checked; refreshAllDisabledStates(); recompute(); });
 $("copy").addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(out.value); }catch{} });
 $("download").addEventListener("click", ()=>{ const blob=new Blob([out.value],{type:"text/plain"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="raport_template2.txt"; a.click(); URL.revokeObjectURL(a.href); });
 
+// Parenchim checkboxes
+(function(){
+  const wrap = document.getElementById("parenchimWrap");
+  if(!wrap) return;
+  wrap.querySelectorAll('input[type="checkbox"][data-par]').forEach(ch=>{
+    ch.addEventListener("change", ()=>{
+      const key = ch.dataset.par;
+      parenchimSel[key] = ch.checked;
+      recompute(false);
+    });
+  });
+})();
+
+// init
 (function init(){ for(let i=0;i<16;i++) rows.push(newRow(FRAGMENTS_ALL[i])); buildTable(); recompute(); })();
 </script>
 </body>
