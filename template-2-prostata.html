@@ -34,10 +34,10 @@
   /* Compact table layout */
   .table-compact th, .table-compact td { padding:6px 6px; }
   .th-2 {
-  display:inline-block;
-  line-height:1.15;
-  text-align:center;
-}
+    display:inline-block;
+    line-height:1.15;
+    text-align:center;
+  }
   .table-compact td:nth-child(3) { white-space:normal; }
   .table-compact th:not(:nth-child(3)),
   .table-compact td:not(:nth-child(3)) { white-space:nowrap; }
@@ -258,8 +258,33 @@ function buildTable(){
     tr.appendChild(td("#", i+1));
     tr.appendChild(td("Nume fragment", r.name));
 
-    const inX = document.createElement("input"); inX.type="number"; inX.step="any"; inX.value=r.X;
+    // X column with Ctrl+Enter shortcut to go to next row in same column
+    const inX = document.createElement("input");
+    inX.type="number";
+    inX.step="any";
+    inX.value=r.X;
+
+    inX.dataset.col = "X";
+    inX.dataset.row = String(i);
+
     inX.addEventListener("input", ()=>{ r.X=inX.value; recompute(); });
+
+    inX.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" && ev.ctrlKey) {
+        ev.preventDefault();
+        const nextRow = i + 1;
+        if (nextRow < rows.length) {
+          const nextInput = tbody.querySelector(
+            'input[data-col="X"][data-row="' + nextRow + '"]'
+          );
+          if (nextInput) {
+            nextInput.focus();
+            if (nextInput.select) nextInput.select();
+          }
+        }
+      }
+    });
+
     tr.appendChild(td(UI.columns.X.label, inX));
 
     const inY = document.createElement("input"); inY.type="number"; inY.step="any"; inY.value=r.Y;
@@ -288,7 +313,9 @@ function buildTable(){
     // Opt: preset + fraze frecvente
     const wrap = document.createElement("div"); wrap.className = "opt-wrap";
     const sel = document.createElement("select"); sel.className="opt-select";
-    [["","-"],["g3g3","G3+G3"],["g4g4","G4+G4"]].forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; sel.appendChild(o); });
+    [["g3g3","3+3"],["g4g4","4+4"],["","-"]].forEach(([v,l])=>{
+      const o=document.createElement("option"); o.value=v; o.textContent=l; sel.appendChild(o);
+    });
     sel.value = r.preset || "";
     sel.title = "Preset Gleason";
     sel.addEventListener("change", ()=>{ r.preset=sel.value; recompute(false); });
@@ -373,7 +400,8 @@ function fragmentLineForX(prefix,start,locs,ok){
   return parts.length?`- ${prefix}: ${parts.join(", ")};`:null;
 }
 
-// ascund linia dacă Y lipsește; ascund parantezele de % dacă lipsesc; preset-urile înlocuiesc fraza Gleason; adaug tag-urile la final
+// ascund linia dacă Y lipsește; preset-urile înlocuiesc fraza Gleason cu "grad dominant si secundar Gleason X";
+// după fiecare fragment de adenocarcinom se termină cu VIRGULĂ
 function fragmentInfiltrationLines(prefix,start,locs,ok){
   if(!ok) return null;
   const lines=locs.map((loc,k)=>{
@@ -385,9 +413,9 @@ function fragmentInfiltrationLines(prefix,start,locs,ok){
 
     let gleasonPart="";
     if(r.preset==="g3g3"){
-      gleasonPart = "cu pattern dominant si secundar Gleason 3";
+      gleasonPart = "grad dominant si secundar Gleason 3";
     }else if(r.preset==="g4g4"){
-      gleasonPart = "cu pattern dominant si secundar Gleason 4";
+      gleasonPart = "grad dominant si secundar Gleason 4";
     }else{
       const a = r.A || "";
       const b = (r.B!=="" && r.B!=null) ? ` (${r.B}%)` : "";
@@ -405,13 +433,13 @@ function fragmentInfiltrationLines(prefix,start,locs,ok){
     if(r.tags.pni)       extra.push("Asociaza infiltrare perineurala.");
 
     const base = `${loc}: pe o lungime de ${r.Y} mm ${r.Z?`(${r.Z}%)`:``}${gleasonPart?`, ${gleasonPart}`:""}`;
-    const sentence = base + ".";
+    const sentence = base + ","; // VIRGULĂ în loc de punct
     return [sentence, ...extra].join(" ");
   }).filter(Boolean);
   return lines.length?`-  ${prefix}:\n`+lines.join("\n"):null;
 }
 
-// N1–N3 se termină cu virgulă, N4 cu punct
+// N1–N4 acum toate se termină cu VIRGULĂ
 function nervesInfiltrationLines(ok){
   if(!ok) return null;
   const lines=[];
@@ -422,9 +450,9 @@ function nervesInfiltrationLines(ok){
 
     let gleasonPart="";
     if(r.preset==="g3g3"){
-      gleasonPart = "cu pattern dominant si secundar Gleason 3";
+      gleasonPart = "grad dominant si secundar Gleason 3";
     }else if(r.preset==="g4g4"){
-      gleasonPart = "cu pattern dominant si secundar Gleason 4";
+      gleasonPart = "grad dominant si secundar Gleason 4";
     }else{
       const a=r.A||""; const b=(r.B!=="" && r.B!=null)?` (${r.B}%)`:"";
       const c=r.C||""; const d=(r.D!=="" && r.D!=null)?` (${r.D}%)`:"";
@@ -439,7 +467,7 @@ function nervesInfiltrationLines(ok){
 
     const nLabel = `N${i-11}`;
     const base = `${nLabel}: pe o lungime de ${r.Y} mm ${r.Z?`(${r.Z}%)`:``}${gleasonPart?`, ${gleasonPart}`:""}`;
-    const end = (nLabel==="N4") ? "." : ",";
+    const end = ","; // mereu virgulă
     lines.push([base+end, ...extra].join(" "));
   }
   return lines.join("\n");
@@ -516,7 +544,14 @@ $("incRight").addEventListener("change", e => { includeRight = e.target.checked;
 $("incLeft").addEventListener("change",  e => { includeLeft  = e.target.checked; refreshAllDisabledStates(); recompute(); });
 $("incNerves").addEventListener("change",e => { includeNerves= e.target.checked; refreshAllDisabledStates(); recompute(); });
 $("copy").addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(out.value); }catch{} });
-$("download").addEventListener("click", ()=>{ const blob=new Blob([out.value],{type:"text/plain"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="raport_template2.txt"; a.click(); URL.revokeObjectURL(a.href); });
+$("download").addEventListener("click", ()=>{
+  const blob=new Blob([out.value],{type:"text/plain"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="raport_template2.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
 
 // Parenchim checkboxes
 (function(){
