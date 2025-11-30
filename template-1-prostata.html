@@ -234,10 +234,10 @@ function newRow(name){
     X:"", Y:"", Z:0, A:"", B:"", C:"", D:"",
     preset:"", // "", "g3g3", "g4g4"
     tags:{
-      hgpin:false,        // "Asociaza HGPIN."
-      hgpin_cid:false,    // "Asociaza HGPIN si carcinom intraductal."
-      intrad:false,       // ", cu componenta intraductala."
-      pni:false           // "Asociaza infiltrare perineurala."
+      hgpin:false,
+      hgpin_cid:false,
+      intrad:false,
+      pni:false
     }
   };
 }
@@ -251,7 +251,12 @@ function ensureRowCount(n){
 function groupEnabled(i){ if(i<6) return includeRight; if(i<12) return includeLeft; return includeNerves; }
 function includedIndices(){ return rows.map((r,i)=>({i,ok:r.include && groupEnabled(i)})).filter(x=>x.ok).map(x=>x.i); }
 
-function td(label, node){ const el=document.createElement("td"); el.dataset.label=label; if(node instanceof Node) el.appendChild(node); else el.textContent=node; return el; }
+function td(label, node){
+  const el=document.createElement("td");
+  el.dataset.label=label;
+  if(node instanceof Node) el.appendChild(node); else el.textContent=node;
+  return el;
+}
 function setRowDisabled(tr, disabled) {
   const inputs = tr.querySelectorAll('input[type="number"], input[type="text"], select');
   inputs.forEach(el => { el.disabled = disabled; if (disabled) el.blur(); });
@@ -261,6 +266,27 @@ function effectiveIncluded(i) { return rows[i].include && groupEnabled(i); }
 function refreshAllDisabledStates() {
   const trs = tbody.querySelectorAll('tr');
   trs.forEach((tr, i) => setRowDisabled(tr, !effectiveIncluded(i)));
+}
+
+/* ---- Ctrl+Enter helper: from any cell in row N → X in row N+1 ---- */
+function focusFirstCellNextRow(currentRow) {
+  const nextRow = currentRow + 1;
+  if (nextRow >= rows.length) return;
+  const nextInput = tbody.querySelector(
+    'input[data-col="X"][data-row="' + nextRow + '"]'
+  );
+  if (nextInput) {
+    nextInput.focus();
+    if (nextInput.select) nextInput.select();
+  }
+}
+function attachCtrlEnter(el, rowIndex) {
+  el.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && ev.ctrlKey) {
+      ev.preventDefault();
+      focusFirstCellNextRow(rowIndex);
+    }
+  });
 }
 
 /* ---------- Table ---------- */
@@ -283,53 +309,96 @@ function buildTable(){
     tr.appendChild(td("#", i+1));
     tr.appendChild(td("Nume fragment", r.name));
 
-    const inX = document.createElement("input"); inX.type="number"; inX.step="any"; inX.value=r.X;
+    // X column (lungime fragment) – anchor for Ctrl+Enter target
+    const inX = document.createElement("input");
+    inX.type="number";
+    inX.step="any";
+    inX.value=r.X;
+
+    // mark column & row for navigation
+    inX.dataset.col = "X";
+    inX.dataset.row = String(i);
+
     inX.addEventListener("input", ()=>{ r.X=inX.value; recompute(); });
+    attachCtrlEnter(inX, i);
     tr.appendChild(td(UI.columns.X.label, inX));
 
-    const inY = document.createElement("input"); inY.type="number"; inY.step="any"; inY.value=r.Y;
+    const inY = document.createElement("input");
+    inY.type="number";
+    inY.step="any";
+    inY.value=r.Y;
     inY.addEventListener("input", ()=>{ r.Y=inY.value; recompute(); });
+    attachCtrlEnter(inY, i);
     tr.appendChild(td(UI.columns.Y.label, inY));
 
-    const zCell = td(UI.columns.Z.label, r.Z || 0); zCell.className = "zcell";
+    const zCell = td(UI.columns.Z.label, r.Z || 0);
+    zCell.className = "zcell";
     tr.appendChild(zCell);
 
-    const inA = document.createElement("input"); inA.type="text"; inA.value=r.A;
+    const inA = document.createElement("input");
+    inA.type="text";
+    inA.value=r.A;
     inA.addEventListener("input", ()=>{ r.A=inA.value; recompute(false); });
+    attachCtrlEnter(inA, i);
     tr.appendChild(td(UI.columns.A.label, inA));
 
-    const inB = document.createElement("input"); inB.type="number"; inB.step="any"; inB.value=r.B;
+    const inB = document.createElement("input");
+    inB.type="number";
+    inB.step="any";
+    inB.value=r.B;
     inB.addEventListener("input", ()=>{ r.B=inB.value; recompute(false); });
+    attachCtrlEnter(inB, i);
     tr.appendChild(td(UI.columns.B.label, inB));
 
-    const inC = document.createElement("input"); inC.type="text"; inC.value=r.C;
+    const inC = document.createElement("input");
+    inC.type="text";
+    inC.value=r.C;
     inC.addEventListener("input", ()=>{ r.C=inC.value; recompute(false); });
+    attachCtrlEnter(inC, i);
     tr.appendChild(td(UI.columns.C.label, inC));
 
-    const inD = document.createElement("input"); inD.type="number"; inD.step="any"; inD.value=r.D;
+    const inD = document.createElement("input");
+    inD.type="number";
+    inD.step="any";
+    inD.value=r.D;
     inD.addEventListener("input", ()=>{ r.D=inD.value; recompute(false); });
+    attachCtrlEnter(inD, i);
     tr.appendChild(td(UI.columns.D.label, inD));
 
     // --- Opt column: preset + quick phrases ---
     const wrap = document.createElement("div");
-    wrap.style.display="grid"; wrap.style.gap="6px";
+    wrap.style.display="grid";
+    wrap.style.gap="6px";
 
     const sel = document.createElement("select");
-    [["","-"],["g3g3","G3+G3"],["g4g4","G4+G4"]].forEach(([val,lbl])=>{
-      const opt=document.createElement("option"); opt.value=val; opt.textContent=lbl; sel.appendChild(opt);
+    [["g3g3","3+3"],["g4g4","4+4"],["","-"]].forEach(([val,lbl])=>{
+      const opt=document.createElement("option");
+      opt.value=val;
+      opt.textContent=lbl;
+      sel.appendChild(opt);
     });
     sel.value = r.preset || "";
-    sel.addEventListener("change", ()=>{ r.preset = sel.value; recompute(false); });
+    sel.addEventListener("change", ()=>{
+      r.preset = sel.value;
+      recompute(false);
+    });
+    attachCtrlEnter(sel, i);
 
     const mkChk = (key, label) => {
-      const lab=document.createElement("label"); lab.style.fontSize="12px";
-      const c=document.createElement("input"); c.type="checkbox"; c.checked=!!r.tags[key];
+      const lab=document.createElement("label");
+      lab.style.fontSize="12px";
+      const c=document.createElement("input");
+      c.type="checkbox";
+      c.checked=!!r.tags[key];
       c.addEventListener("change", ()=>{ r.tags[key]=c.checked; recompute(false); });
-      lab.appendChild(c); lab.append(" "+label);
+      lab.appendChild(c);
+      lab.append(" "+label);
       return lab;
     };
     const tagsRow=document.createElement("div");
-    tagsRow.style.display="flex"; tagsRow.style.flexWrap="wrap"; tagsRow.style.gap="8px";
+    tagsRow.style.display="flex";
+    tagsRow.style.flexWrap="wrap";
+    tagsRow.style.gap="8px";
     tagsRow.appendChild(mkChk("hgpin",     "HGPIN"));
     tagsRow.appendChild(mkChk("hgpin_cid", "HGPIN+CID"));
     tagsRow.appendChild(mkChk("intrad",    "Intrad."));
@@ -382,8 +451,8 @@ function recompute(updateZCells=true){
   sumX.textContent=G;
   sumY.textContent=E;
   sumZ.textContent=F; // afișăm F aici (nu ΣZ)
-  sumB.textContent=totalG3; // opțional: afișez total G3
-  sumD.textContent=totalG4; // opțional: afișez total G4
+  sumB.textContent=totalG3; // total G3
+  sumD.textContent=totalG4; // total G4
 
   if(updateZCells){
     [...tbody.querySelectorAll(".zcell")].forEach((c,idx)=>{ c.textContent = rows[idx].Z || 0; });
@@ -398,11 +467,16 @@ function rowIncluded(i){ return rows[i] && rows[i].include && groupEnabled(i); }
 
 function fragmentLineForX(prefix,start,locs,ok){
   if(!ok) return null;
-  const parts=locs.map((loc,k)=>{ const idx=start+k; if(idx>=rows.length||!rowIncluded(idx)) return null; const x=rows[idx].X||"x"; return `${loc} - cu lungimea de ${x} mm`; }).filter(Boolean);
+  const parts=locs.map((loc,k)=>{
+    const idx=start+k;
+    if(idx>=rows.length||!rowIncluded(idx)) return null;
+    const x=rows[idx].X||"x";
+    return `${loc} - cu lungimea de ${x} mm`;
+  }).filter(Boolean);
   return parts.length?`- ${prefix}: ${parts.join(", ")};`:null;
 }
 
-// Lines for lob drept/stang; skip if Y missing; hide % parens if B/D missing; allow presets; add quick phrases; end with '.'
+// Lines for lob drept/stang; skip if Y missing; hide % parens if B/D missing; allow presets; add quick phrases; end with VIRGULĂ
 function fragmentInfiltrationLines(prefix,start,locs,ok){
   if(!ok) return null;
   const lines=locs.map((loc,k)=>{
@@ -410,13 +484,13 @@ function fragmentInfiltrationLines(prefix,start,locs,ok){
     if(idx>=rows.length || !rowIncluded(idx)) return null;
     const r=rows[idx];
 
-    if(r.Y==="" || r.Y===null) return null; // (1) dacă Y lipsește, nu generăm linia
+    if(r.Y==="" || r.Y===null) return null; // dacă Y lipsește, nu generăm linia
 
     let gleasonPart="";
     if(r.preset==="g3g3"){
-      gleasonPart = "cu pattern dominant si secundar Gleason 3";
+      gleasonPart = "grad dominant si secundar Gleason 3";
     }else if(r.preset==="g4g4"){
-      gleasonPart = "cu pattern dominant si secundar Gleason 4";
+      gleasonPart = "grad dominant si secundar Gleason 4";
     }else{
       const a = r.A || "";
       const b = (r.B!=="" && r.B!=null) ? ` (${r.B}%)` : "";
@@ -434,13 +508,13 @@ function fragmentInfiltrationLines(prefix,start,locs,ok){
     if(r.tags.pni)       extra.push("Asociaza infiltrare perineurala.");
 
     const base = `${loc}: pe o lungime de ${r.Y} mm (${r.Z||0}%)${gleasonPart?`, ${gleasonPart}`:""}`;
-    const sentence = base + ".";
+    const sentence = base + ","; // VIRGULĂ, nu punct
     return [sentence, ...extra].join(" ");
   }).filter(Boolean);
   return lines.length?`-  ${prefix}:\n`+lines.join("\n"):null;
 }
 
-// Nerves: same logic, but N1,N2,N3 end with ','; N4 ends with '.'
+// Nerves: same logic, dar acum toate se termină cu VIRGULĂ
 function nervesInfiltrationLines(ok){
   if(!ok) return null;
   const lines=[];
@@ -451,9 +525,9 @@ function nervesInfiltrationLines(ok){
 
     let gleasonPart="";
     if(r.preset==="g3g3"){
-      gleasonPart = "cu pattern dominant si secundar Gleason 3";
+      gleasonPart = "grad dominant si secundar Gleason 3";
     }else if(r.preset==="g4g4"){
-      gleasonPart = "cu pattern dominant si secundar Gleason 4";
+      gleasonPart = "grad dominant si secundar Gleason 4";
     }else{
       const a=r.A||""; const b=(r.B!=="" && r.B!=null)?` (${r.B}%)`:"";
       const c=r.C||""; const d=(r.D!=="" && r.D!=null)?` (${r.D}%)`:"";
@@ -468,7 +542,7 @@ function nervesInfiltrationLines(ok){
 
     const nLabel = `N${i-11}`;
     const base = `${nLabel}: pe o lungime de ${r.Y} mm (${r.Z||0}%)${gleasonPart?`, ${gleasonPart}`:""}`;
-    const end = (nLabel==="N4") ? "." : ",";
+    const end = ","; // întotdeauna virgulă
     lines.push([base+end, ...extra].join(" "));
   }
   return lines.join("\n");
@@ -476,7 +550,11 @@ function nervesInfiltrationLines(ok){
 
 function nervesXLine(ok){
   if(!ok) return null;
-  const parts=[]; for(let i=12;i<16&&i<rows.length;i++){ if(!rowIncluded(i)) continue; parts.push(`N${i-11}: ${rows[i].X||"x"} mm`); }
+  const parts=[];
+  for(let i=12;i<16&&i<rows.length;i++){
+    if(!rowIncluded(i)) continue;
+    parts.push(`N${i-11}: ${rows[i].X||"x"} mm`);
+  }
   return parts.length?parts.join(", ")+".":null;
 }
 
@@ -492,14 +570,23 @@ function buildReportText(E,F,G,totalG3,totalG4,positiveCount,totalCount){
   const leftX =fragmentLineForX("lob stang",6,LEFT_LOCATIONS,includeLeft);
   const nervesX=nervesXLine(includeNerves);
 
-  const parts1=[`Materialul examinat este alcatuit din ${N} fragmente prostatice biopunctate astfel:`, rightX, leftX, nervesX?`\n      ${nervesX}`:null].filter(Boolean).join("\n");
+  const parts1=[
+    `Materialul examinat este alcatuit din ${N} fragmente prostatice biopunctate astfel:`,
+    rightX,
+    leftX,
+    nervesX?`\n      ${nervesX}`:null
+  ].filter(Boolean).join("\n");
 
   const rightInf=fragmentInfiltrationLines("lob drept",0,RIGHT_LOCATIONS,includeRight);
   const leftInf =fragmentInfiltrationLines("lob stang",6,LEFT_LOCATIONS,includeLeft);
   const nervesInf=nervesInfiltrationLines(includeNerves);
-  const parts2=[`Sunt infiltrate de un adenocarcinom prostatic acinar astfel:`, rightInf, "", leftInf, "", nervesInf].filter(v=>v!==null).join("\n");
+  const parts2=[
+    `Sunt infiltrate de un adenocarcinom prostatic acinar astfel:`,
+    rightInf, "",
+    leftInf, "",
+    nervesInf
+  ].filter(v=>v!==null).join("\n");
 
-  // dacă există cel puțin un fragment cu PNI bifat, scoatem "infiltrare perineurala" din fraza negativă
   const anyPNI = rows.some(r => r.include && r.tags && r.tags.pni);
 
   const fragInfo = `${positiveCount} fragmente pozitive din totalul de ${totalCount}.`;
@@ -530,13 +617,11 @@ C 61.9   M-8140/3`;
 }
 
 /* ---------- Import parser ---------- */
-// Build a quick index: fragment name (lowercased) -> row index
 function buildNameIndex() {
   const map = new Map();
   rows.forEach((r, i) => map.set(r.name.toLowerCase(), i));
   return map;
 }
-// Generate a regex fragment of all location tokens that appear in FRAGMENTS_ALL
 function allLocationAlternation() {
   const set = new Set();
   FRAGMENTS_ALL.forEach(n => {
@@ -615,8 +700,6 @@ function parseAndFill(text) {
     }
   }
 
-  // nerves infiltration optional pattern (rare); safe to skip if not present
-
   buildTable();
   refreshAllDisabledStates && refreshAllDisabledStates();
   recompute(true);
@@ -645,18 +728,65 @@ document.getElementById("btnClearImport").addEventListener("click", ()=>{
 })();
 
 /* ---------- Events & init ---------- */
-function resetAllValues(){ rows.forEach(r=>{ r.X=""; r.Y=""; r.Z=0; r.A=""; r.B=""; r.C=""; r.D=""; r.preset=""; r.tags={hgpin:false,hgpin_cid:false,intrad:false,pni:false}; r.include=true; }); buildTable(); recompute(); }
-$("applyCount").addEventListener("click",()=>{ const v=+$("fragCount").value; ensureRowCount(isFinite(v)?v:fragCount); buildTable(); recompute(); });
-$("addOne").addEventListener("click",()=>{ ensureRowCount(fragCount+1); buildTable(); recompute(); });
-$("removeOne").addEventListener("click",()=>{ ensureRowCount(fragCount-1); buildTable(); recompute(); });
+function resetAllValues(){
+  rows.forEach(r=>{
+    r.X=""; r.Y=""; r.Z=0; r.A=""; r.B=""; r.C=""; r.D="";
+    r.preset="";
+    r.tags={hgpin:false,hgpin_cid:false,intrad:false,pni:false};
+    r.include=true;
+  });
+  buildTable();
+  recompute();
+}
+$("applyCount").addEventListener("click",()=>{
+  const v=+$("fragCount").value;
+  ensureRowCount(isFinite(v)?v:fragCount);
+  buildTable();
+  recompute();
+});
+$("addOne").addEventListener("click",()=>{
+  ensureRowCount(fragCount+1);
+  buildTable();
+  recompute();
+});
+$("removeOne").addEventListener("click",()=>{
+  ensureRowCount(fragCount-1);
+  buildTable();
+  recompute();
+});
 $("clearAll").addEventListener("click", resetAllValues);
-$("incRight").addEventListener("change", e => { includeRight = e.target.checked; refreshAllDisabledStates(); recompute(); });
-$("incLeft").addEventListener("change",  e => { includeLeft  = e.target.checked; refreshAllDisabledStates(); recompute(); });
-$("incNerves").addEventListener("change",e => { includeNerves = e.target.checked; refreshAllDisabledStates(); recompute(); });
-$("copy").addEventListener("click", async ()=>{ try{ await navigator.clipboard.writeText(out.value); }catch{} });
-$("download").addEventListener("click", ()=>{ const blob=new Blob([out.value],{type:"text/plain"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="raport_template1.txt"; a.click(); URL.revokeObjectURL(a.href); });
+$("incRight").addEventListener("change", e => {
+  includeRight = e.target.checked;
+  refreshAllDisabledStates();
+  recompute();
+});
+$("incLeft").addEventListener("change",  e => {
+  includeLeft  = e.target.checked;
+  refreshAllDisabledStates();
+  recompute();
+});
+$("incNerves").addEventListener("change",e => {
+  includeNerves = e.target.checked;
+  refreshAllDisabledStates();
+  recompute();
+});
+$("copy").addEventListener("click", async ()=>{
+  try{ await navigator.clipboard.writeText(out.value); }catch{}
+});
+$("download").addEventListener("click", ()=>{
+  const blob=new Blob([out.value],{type:"text/plain"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="raport_template1.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
 
-(function init(){ for(let i=0;i<16;i++) rows.push(newRow(FRAGMENTS_ALL[i])); buildTable(); recompute(); })();
+(function init(){
+  for(let i=0;i<16;i++) rows.push(newRow(FRAGMENTS_ALL[i]));
+  buildTable();
+  recompute();
+})();
 </script>
 </body>
 </html>
