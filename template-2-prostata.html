@@ -651,7 +651,7 @@
 
     function nervesXLine(ok) {
       if (!ok) return null;
-      const parts = []; for (let i = 12; i < 16 && i < rows.length; i++) { if (!rowIncluded(i)) continue; parts.push(`N${i - 11}: ${rows[i].X || "x"} mm`); }
+      const parts = []; for (let i = 12; i < 16 && i < rows.length; i++) { if (!rowIncluded(i)) continue; parts.push(`N${i - 11}: cu lungimea de ${rows[i].X || "x"} mm`); }
       return parts.length ? parts.join(", ") + "." : null;
     }
 
@@ -693,7 +693,7 @@ Nu se identifica aspecte de ${negativeBits} (in aceste sectiuni).
 ${parenchimText}
 
 Diagnostic: 
-Adenocarcinom prostatic acinar, grupa de gradare  (ISUP/OMS 2022).
+Adenocarcinom prostatic acinar scor Gleason   (+), grupa de gradare  (ISUP/OMS 2022).
 
 C 61.9   M-8140/3`;
 
