@@ -20,7 +20,7 @@
     body {
       font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif;
       margin: 0;
-      background: #f8fafc;
+      background: #f0fdf4;
       color: #0f172a;
     }
 
@@ -30,6 +30,7 @@
       background: #ffffffcc;
       backdrop-filter: saturate(1.1) blur(6px);
       border-bottom: 1px solid var(--bd);
+      border-top: 4px solid #059669;
       padding: 10px 16px;
       z-index: 10;
     }
@@ -235,12 +236,21 @@
       background: #f8fafc;
       color: #64748b;
     }
+
+    table td:first-child input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>Template 2 – Fragmente prostatice (posterior / mijlociu / anterior)</h1>
+  <header style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+    <h1>pbp medicover – Fragmente prostatice (posterior / mijlociu / anterior)</h1>
+    <span
+      style="background: #d1fae5; color: #047857; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid #a7f3d0;">pbp
+      medicover </span>
   </header>
   <main>
 
@@ -396,7 +406,7 @@
       return {
         name, include: true, X: "", Y: "", Z: 0, A: "", B: "", C: "", D: "",
         preset: "", // "", "g3g3", "g4g4"
-        tags: { hgpin: false, hgpin_cid: false, intrad: false, pni: false }
+        tags: { focal_cribriform: false, cribriform: false, hgpin: false, hgpin_cid: false, intrad: false, pni: false }
       };
     }
     function ensureRowCount(n) {
@@ -443,7 +453,15 @@
         inX.dataset.col = "X";
         inX.dataset.row = String(i);
 
-        inX.addEventListener("input", () => { r.X = inX.value; recompute(); });
+        inX.addEventListener("input", () => {
+          r.X = inX.value;
+          if (inX.value.trim() !== "") {
+            r.include = true;
+            cb.checked = true;
+            setRowDisabled(tr, !effectiveIncluded(i));
+          }
+          recompute();
+        });
 
         inX.addEventListener("keydown", (ev) => {
           if (ev.key === "Enter" && ev.ctrlKey) {
@@ -508,10 +526,12 @@
           lab.appendChild(span);
           return lab;
         };
+        tagsRow.appendChild(mkChk("focal_cribriform", "focal cribriform", "Aspect focal cribriform."));
+        tagsRow.appendChild(mkChk("cribriform", "cribriform", "Aspect cribriform."));
         tagsRow.appendChild(mkChk("hgpin", "HGPIN", "Asociaza HGPIN."));
         tagsRow.appendChild(mkChk("hgpin_cid", "HGPIN+CID", "Asociaza HGPIN si carcinom intraductal."));
         tagsRow.appendChild(mkChk("intrad", "Intrad.", "cu componenta intraductala."));
-        tagsRow.appendChild(mkChk("pni", "PNI", "Asociaza infiltrare perineurala."));
+        tagsRow.appendChild(mkChk("pni", "Pn1", "Asociaza infiltrare perineurala."));
         wrap.appendChild(tagsRow);
 
         const optTd = td("Opt", wrap); optTd.className = "opt";
@@ -577,7 +597,6 @@
     }
 
     // ascund linia dacă Y lipsește; preset-urile înlocuiesc fraza Gleason cu "grad dominant si secundar Gleason X";
-    // după fiecare fragment de adenocarcinom se termină cu VIRGULĂ
     function fragmentInfiltrationLines(prefix, start, locs, ok) {
       if (!ok) return null;
       const lines = locs.map((loc, k) => {
@@ -602,20 +621,37 @@
           }
         }
 
-        const extra = [];
-        if (r.tags.hgpin) extra.push("Asociaza HGPIN.");
-        if (r.tags.hgpin_cid) extra.push("Asociaza HGPIN si carcinom intraductal.");
-        if (r.tags.intrad) extra.push(", cu componenta intraductala.");
-        if (r.tags.pni) extra.push("Asociaza infiltrare perineurala.");
+        const groupA = [];
+        const groupB = [];
+
+        if (r.tags.focal_cribriform) groupA.push("focal cribriform");
+        if (r.tags.cribriform) groupA.push("cribriform");
+        if (r.tags.intrad) groupA.push("cu componenta intraductala, inclus in gradare (conform ISUP si GUPS 2026)");
+
+        if (r.tags.hgpin) groupB.push("Asociaza HGPIN.");
+        if (r.tags.hgpin_cid) groupB.push("Asociaza HGPIN si carcinom intraductal, inclus in gradare (conform ISUP si GUPS 2026).");
+        if (r.tags.pni) groupB.push("Asociaza infiltrare perineurala.");
 
         const base = `${loc}: pe o lungime de ${r.Y} mm${gleasonPart ? `, ${gleasonPart}` : ""}`;
-        const sentence = base + ","; // VIRGULĂ în loc de punct
-        return [sentence, ...extra].join(" ");
+        let sentence = "";
+        if (groupA.length > 0) {
+          sentence = base + ", " + groupA.join(", ");
+          if (groupB.length > 0) {
+            sentence += ". " + groupB.join(" ");
+          } else {
+            sentence += ".";
+          }
+        } else if (groupB.length > 0) {
+          sentence = base + ". " + groupB.join(" ");
+        } else {
+          sentence = base + ",";
+        }
+        return sentence;
       }).filter(Boolean);
       return lines.length ? `-  ${prefix}:\n` + lines.join("\n") : null;
     }
 
-    // N1–N4 acum toate se termină cu VIRGULĂ
+    // N1–N4
     function nervesInfiltrationLines(ok) {
       if (!ok) return null;
       const lines = [];
@@ -635,16 +671,33 @@
           if (a || c) { gleasonPart = `cu pattern dominant Gleason ${a}${b} si pattern secundar Gleason ${c}${d}`; }
         }
 
-        const extra = [];
-        if (r.tags.hgpin) extra.push("Asociaza HGPIN.");
-        if (r.tags.hgpin_cid) extra.push("Asociaza HGPIN si carcinom intraductal.");
-        if (r.tags.intrad) extra.push(", cu componenta intraductala.");
-        if (r.tags.pni) extra.push("Asociaza infiltrare perineurala.");
+        const groupA = [];
+        const groupB = [];
+
+        if (r.tags.focal_cribriform) groupA.push("focal cribriform");
+        if (r.tags.cribriform) groupA.push("cribriform");
+        if (r.tags.intrad) groupA.push("cu componenta intraductala, inclus in gradare (conform ISUP si GUPS 2026)");
+
+        if (r.tags.hgpin) groupB.push("Asociaza HGPIN.");
+        if (r.tags.hgpin_cid) groupB.push("Asociaza HGPIN si carcinom intraductal, inclus in gradare (conform ISUP si GUPS 2026).");
+        if (r.tags.pni) groupB.push("Asociaza infiltrare perineurala.");
 
         const nLabel = `N${i - 11}`;
         const base = `${nLabel}: pe o lungime de ${r.Y} mm${gleasonPart ? `, ${gleasonPart}` : ""}`;
-        const end = ","; // mereu virgulă
-        lines.push([base + end, ...extra].join(" "));
+        let sentence = "";
+        if (groupA.length > 0) {
+          sentence = base + ", " + groupA.join(", ");
+          if (groupB.length > 0) {
+            sentence += ". " + groupB.join(" ");
+          } else {
+            sentence += ".";
+          }
+        } else if (groupB.length > 0) {
+          sentence = base + ". " + groupB.join(" ");
+        } else {
+          sentence = base + ",";
+        }
+        lines.push(sentence);
       }
       return lines.join("\n");
     }
@@ -655,10 +708,18 @@
       return parts.length ? parts.join(", ") + "." : null;
     }
 
+    function joinWithSau(arr) {
+      if (arr.length === 0) return "";
+      if (arr.length === 1) return arr[0];
+      const last = arr[arr.length - 1];
+      const rest = arr.slice(0, -1);
+      return rest.join(", ") + " sau " + last;
+    }
+
     function buildParenchimText() {
       const picked = Object.keys(parenchimSel).filter(k => parenchimSel[k]).map(k => PARENCHIM[k]);
-      if (!picked.length) return "Parenchimul prostatic netumoral prezinta aspecte fara particularitati notabile.";
-      return "Parenchimul prostatic netumoral prezinta " + picked.join(", ") + ".";
+      if (!picked.length) return "";
+      return "Prezinta " + picked.join(", ") + ".";
     }
 
     function buildReportText(E, F, G, totalG3, totalG4, positiveCount, totalCount) {
@@ -677,25 +738,24 @@
       const anyPNI = rows.some((r, i) => r.include && groupEnabled(i) && r.tags && r.tags.pni);
 
       const fragInfo = `${positiveCount} fragmente pozitive din totalul de ${totalCount}.`;
-      const negativeBits = [
+      const negativeBits = joinWithSau([
         "extensie extraprostatica",
         anyPNI ? null : "infiltrare perineurala",
         "invazie angiolimfatica"
-      ].filter(Boolean).join(", ");
+      ].filter(Boolean));
 
       const parenchimText = buildParenchimText();
 
-      const summary =
-        `Sunt infiltrati in total ${E} mm (${F}%), din cei ${G} mm ai fragmentelor prelevate, ${fragInfo}
+      const summaryParts = [
+        `Sunt infiltrati in total ${E} mm (${F}%) din cei ${G} mm ai fragmentelor prelevate, ${fragInfo}`,
+        `Nu se identifica aspecte de ${negativeBits} (in aceste sectiuni).`
+      ];
+      if (parenchimText) {
+        summaryParts.push(parenchimText);
+      }
+      summaryParts.push(`Diagnostic: \nAdenocarcinom prostatic acinar scor Gleason  (+), grupa de gradare  (ISUP/OMS 2022).\n\nC 61.9   M-8140/3`);
 
-Nu se identifica aspecte de ${negativeBits} (in aceste sectiuni).
-
-${parenchimText}
-
-Diagnostic: 
-Adenocarcinom prostatic acinar scor Gleason   (+), grupa de gradare  (ISUP/OMS 2022).
-
-C 61.9   M-8140/3`;
+      const summary = summaryParts.join("\n\n");
 
       return `${parts1}\n\n${parts2}\n\n${summary}`;
     }
@@ -704,7 +764,7 @@ C 61.9   M-8140/3`;
     function resetAllValues() {
       rows.forEach(r => {
         r.X = ""; r.Y = ""; r.Z = 0; r.A = ""; r.B = ""; r.C = ""; r.D = "";
-        r.preset = ""; r.tags = { hgpin: false, hgpin_cid: false, intrad: false, pni: false };
+        r.preset = ""; r.tags = { focal_cribriform: false, cribriform: false, hgpin: false, hgpin_cid: false, intrad: false, pni: false };
         r.include = true;
       });
       buildTable(); recompute();
